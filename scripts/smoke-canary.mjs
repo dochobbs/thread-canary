@@ -65,6 +65,19 @@ async function main() {
     'Document ingestion did not persist through the API.',
   );
 
+  const agentPayload = await request('/api/agent/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text: 'I have chest tightness and fever. What should I do?' }),
+  });
+  assert(
+    agentPayload.reply?.text?.toLowerCase().includes('care level'),
+    'Agent message did not return a state-grounded care-level reply.',
+  );
+  assert(
+    agentPayload.state?.agentMessages?.some((message) => message.role === 'assistant'),
+    'Agent conversation did not persist through the API.',
+  );
+
   console.log(`Canary smoke passed at ${baseUrl}`);
 }
 

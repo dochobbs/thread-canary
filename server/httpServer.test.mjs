@@ -109,6 +109,28 @@ describe('canary HTTP server', () => {
     }
   });
 
+  it('accepts agent messages and returns the updated conversation', async () => {
+    const { server, url } = await createRunningServer();
+
+    try {
+      const response = await fetch(`${url}/api/agent/messages`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: 'I have chest tightness and a fever. What should I do?' }),
+      });
+      const payload = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(payload.reply).toMatchObject({ role: 'assistant', text: expect.stringContaining('care level') });
+      expect(payload.state.agentMessages).toEqual([
+        expect.objectContaining({ role: 'student', text: 'I have chest tightness and a fever. What should I do?' }),
+        expect.objectContaining({ role: 'assistant', text: expect.stringContaining('care level') }),
+      ]);
+    } finally {
+      await closeServer(server);
+    }
+  });
+
   it('serves the app shell for non-API routes', async () => {
     const { server, url } = await createRunningServer();
 

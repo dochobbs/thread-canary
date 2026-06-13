@@ -5,6 +5,7 @@ import {
   addCanaryMemory,
   completeCanaryAction,
   getCanaryState,
+  sendCanaryAgentMessage,
   type CanaryState,
   type DocumentInput,
 } from './api/client';
@@ -34,6 +35,7 @@ export default function App() {
   const [activeTool, setActiveTool] = useState<StudentTool>('plan');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
+  const [isSendingAgent, setIsSendingAgent] = useState(false);
   const [isSavingMemory, setIsSavingMemory] = useState(false);
   const [isSavingDocument, setIsSavingDocument] = useState(false);
 
@@ -64,6 +66,19 @@ export default function App() {
 
   async function activateModule(module: DeepModule) {
     await applyStateMutation(() => activateCanaryModule(module.id));
+  }
+
+  async function sendAgentMessage(text: string) {
+    setIsSendingAgent(true);
+    try {
+      setMutationError(null);
+      const result = await sendCanaryAgentMessage(text);
+      setCanaryState(result.state);
+    } catch (error) {
+      setMutationError(error instanceof Error ? error.message : 'Agent message failed.');
+    } finally {
+      setIsSendingAgent(false);
+    }
   }
 
   async function addMemory(text: string) {
@@ -144,7 +159,11 @@ export default function App() {
 
       <div className="focus-layout">
         <section className="today-column" aria-label="Today">
-          <AgentPanel />
+          <AgentPanel
+            messages={canaryState?.agentMessages ?? []}
+            isSending={isSendingAgent}
+            onSendMessage={canaryState ? sendAgentMessage : undefined}
+          />
           {loadError ? (
             <section className="panel" role="alert">
               <h2>Canary offline</h2>

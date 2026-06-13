@@ -18,6 +18,7 @@ function createMockState(): CanaryState {
     activeModules: modules.filter((module) => seedStudent.activeModuleIds.includes(module.id)),
     recommendedModules: recommendModules(seedStudent).map((module) => ({ ...module, activated: false })),
     weeklySummary: summarizeWeek(seedStudent),
+    agentMessages: [],
     events: [],
   };
 }
@@ -109,6 +110,27 @@ beforeEach(() => {
         return jsonResponse(mockState);
       }
 
+      if (path === '/api/agent/messages' && init?.method === 'POST') {
+        const body = readBody(init);
+        const studentMessage = {
+          id: 'student-message-test',
+          role: 'student' as const,
+          text: body.text,
+          createdAt: '2026-06-13T20:00:00.000Z',
+        };
+        const assistantMessage = {
+          id: 'assistant-message-test',
+          role: 'assistant' as const,
+          text: 'Put the care level decision first. I can help you prepare the symptom history.',
+          createdAt: '2026-06-13T20:00:01.000Z',
+        };
+        mockState = {
+          ...mockState,
+          agentMessages: [studentMessage, assistantMessage],
+        };
+        return jsonResponse({ reply: assistantMessage, state: mockState });
+      }
+
       return jsonResponse({ error: 'Not found' }, 404);
     }),
   );
@@ -168,6 +190,24 @@ describe('College Life OS app shell', () => {
     await user.click(await screen.findByRole('button', { name: /mark decide care level for symptoms done/i }));
 
     expect(screen.getByText(/completed: decide care level for symptoms/i)).toBeInTheDocument();
+  });
+
+  it('lets the student message the agent from the default mobile surface', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/message agent/i), 'I have chest tightness and fever');
+    await user.click(screen.getByRole('button', { name: /send to agent/i }));
+
+    expect(await screen.findByText(/put the care level decision first/i)).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/agent/messages',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ text: 'I have chest tightness and fever' }),
+      }),
+    );
   });
 
   it('saves student memory through the canary API', async () => {

@@ -7,6 +7,13 @@ export interface CanaryEvent {
   createdAt: string;
 }
 
+export interface AgentMessage {
+  id: string;
+  role: 'student' | 'assistant';
+  text: string;
+  createdAt: string;
+}
+
 export interface CanaryState {
   profile: StudentProfile;
   actions: AgentAction[];
@@ -15,7 +22,13 @@ export interface CanaryState {
   activeModules: DeepModule[];
   recommendedModules: DeepModule[];
   weeklySummary: WeeklySummary;
+  agentMessages: AgentMessage[];
   events: CanaryEvent[];
+}
+
+export interface AgentMessageResult {
+  reply: AgentMessage;
+  state: CanaryState;
 }
 
 export interface DocumentInput {
@@ -24,7 +37,7 @@ export interface DocumentInput {
   status?: string;
 }
 
-async function requestCanaryState(path: string, init?: RequestInit): Promise<CanaryState> {
+async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
     headers: {
@@ -39,6 +52,10 @@ async function requestCanaryState(path: string, init?: RequestInit): Promise<Can
   }
 
   return payload;
+}
+
+function requestCanaryState(path: string, init?: RequestInit) {
+  return requestJson<CanaryState>(path, init);
 }
 
 export function getCanaryState() {
@@ -64,5 +81,12 @@ export function addCanaryDocument(document: DocumentInput) {
   return requestCanaryState('/api/documents', {
     method: 'POST',
     body: JSON.stringify(document),
+  });
+}
+
+export function sendCanaryAgentMessage(text: string) {
+  return requestJson<AgentMessageResult>('/api/agent/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text }),
   });
 }

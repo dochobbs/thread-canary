@@ -71,4 +71,28 @@ describe('canary store', () => {
     expect(matches).toHaveLength(1);
     expect(matches[0].status).toBe('Needs review');
   });
+
+  it('persists agent conversation turns and returns state-grounded replies', async () => {
+    const { filePath, store } = await createTempStore();
+
+    const result = await store.sendAgentMessage('I have chest tightness and a fever. What should I do?');
+    const persisted = JSON.parse(await readFile(filePath, 'utf8'));
+
+    expect(result.reply.role).toBe('assistant');
+    expect(result.reply.text).toContain('care level');
+    expect(result.state.agentMessages).toEqual([
+      expect.objectContaining({ role: 'student', text: 'I have chest tightness and a fever. What should I do?' }),
+      expect.objectContaining({ role: 'assistant', text: expect.stringContaining('care level') }),
+    ]);
+    expect(persisted.agentMessages).toHaveLength(2);
+  });
+
+  it('keeps symptom guidance useful after the urgent action has already been completed', async () => {
+    const { store } = await createTempStore();
+
+    await store.completeAction('care-red-flag');
+    const result = await store.sendAgentMessage('I still have chest tightness and fever.');
+
+    expect(result.reply.text).toContain('care level');
+  });
 });

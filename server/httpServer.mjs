@@ -122,6 +122,12 @@ async function routeApi(request, response, store, pathname) {
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/agent/messages') {
+    const body = await readJsonBody(request);
+    sendJson(response, 200, await store.sendAgentMessage(body.text));
+    return;
+  }
+
   sendJson(response, 404, { error: 'Not found' });
 }
 

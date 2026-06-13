@@ -138,6 +138,7 @@ function createSeedState() {
     profile: structuredClone(seedProfile),
     completedActionIds: [],
     activatedModuleIds: [],
+    agentMessages: [],
     events: [],
   };
 }
@@ -157,6 +158,7 @@ function normalizeState(state) {
     },
     completedActionIds: state.completedActionIds ?? [],
     activatedModuleIds: state.activatedModuleIds ?? [],
+    agentMessages: state.agentMessages ?? [],
     events: state.events ?? [],
   };
 }
@@ -262,8 +264,50 @@ function buildCanaryState(state) {
     activeModules: moduleRegistry.filter((module) => activeModuleIds.includes(module.id)),
     recommendedModules: recommendModules(state.profile, state.activatedModuleIds),
     weeklySummary: summarizeWeek(state.profile, state.completedActionIds),
+    agentMessages: state.agentMessages,
     events: state.events,
   };
+}
+
+function createAgentMessage(state, role, text) {
+  return {
+    id: `${Date.now()}-${state.agentMessages.length + 1}`,
+    role,
+    text,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function buildAgentReply(state, text) {
+  const normalized = text.toLowerCase();
+  const actions = createActionQueue(state.profile, state.completedActionIds);
+  const urgentAction = actions.find((action) => action.priority === 'urgent' && !action.completed);
+  const refillAction = actions.find((action) => action.id === 'refill-stimulant' && !action.completed);
+  const sleepAction = actions.find((action) => action.id === 'restart-academic-load' && !action.completed);
+
+  if (normalized.includes('chest') || normalized.includes('fever') || normalized.includes('symptom')) {
+    return urgentAction
+      ? `Put the care level decision first: ${urgentAction.detail} If symptoms feel severe, rapidly worse, or unsafe, use emergency care now.`
+      : 'care level still comes first. If symptoms feel severe, rapidly worse, or unsafe, use emergency care now; otherwise I can help prepare a short symptom history and choose the right care setting.';
+  }
+
+  if (normalized.includes('refill') || normalized.includes('med') || normalized.includes('pharmacy')) {
+    return refillAction
+      ? `I can help with the refill next: ${refillAction.detail}`
+      : 'Your medication task is not currently the top open item, but I can still help prepare a refill note or med list.';
+  }
+
+  if (normalized.includes('sleep') || normalized.includes('exam') || normalized.includes('study')) {
+    return sleepAction
+      ? `I would protect tonight around recovery: ${sleepAction.detail}`
+      : 'I can help rebuild the week with class, meals, study blocks, and one protected sleep window.';
+  }
+
+  if (normalized.includes('insurance') || normalized.includes('document') || normalized.includes('record')) {
+    return 'I can keep records student-mediated. Add the card, form, receipt, or visit note in Records, and I will remember its status without sharing it.';
+  }
+
+  return 'I can help triage what matters next, remember context, add the right module, or prepare a task. The highest open items are symptoms, refill, and sleep before exams.';
 }
 
 async function readState(filePath) {
@@ -375,6 +419,26 @@ export async function createCanaryStore(options = {}) {
         appendEvent(state, 'document.added', { documentId: nextDocument.id });
       }
       return persist();
+    },
+
+    async sendAgentMessage(text) {
+      const normalized = String(text ?? '').trim();
+      if (!normalized) {
+        const error = new Error('Agent message text is required.');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const studentMessage = createAgentMessage(state, 'student', normalized);
+      state.agentMessages.push(studentMessage);
+      const assistantMessage = createAgentMessage(state, 'assistant', buildAgentReply(state, normalized));
+      state.agentMessages.push(assistantMessage);
+      appendEvent(state, 'agent.message', { studentMessageId: studentMessage.id, replyId: assistantMessage.id });
+
+      return {
+        state: await persist(),
+        reply: assistantMessage,
+      };
     },
   };
 }
