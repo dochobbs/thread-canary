@@ -523,6 +523,19 @@ function createAgentMessage(state, role, text) {
   };
 }
 
+function getWords(text) {
+  return text.match(/[a-z0-9']+/g) ?? [];
+}
+
+function hasAnyWord(text, words) {
+  const wordSet = new Set(getWords(text));
+  return words.some((word) => wordSet.has(word));
+}
+
+function hasAnyPhrase(text, phrases) {
+  return phrases.some((phrase) => text.includes(phrase));
+}
+
 function buildAgentReply(state, text) {
   const normalized = text.toLowerCase();
   const actions = createActionQueue(state.profile, state.completedActionIds, state.activatedModuleIds);
@@ -531,69 +544,110 @@ function buildAgentReply(state, text) {
   const sleepAction = actions.find((action) => action.id === 'restart-academic-load' && !action.completed);
   const nutritionAction = actions.find((action) => action.id === 'nutrition-lab-day-fallback' && !action.completed);
   const financialAction = actions.find((action) => action.id === 'financial-stress-plan' && !action.completed);
+  const mentionsParent = hasAnyWord(normalized, ['parent', 'parents', 'mom', 'dad', 'mother', 'father']);
+  const wantsParentDraft =
+    hasAnyPhrase(normalized, ['parent-safe', 'parent safe']) ||
+    (mentionsParent &&
+      hasAnyWord(normalized, ['draft', 'update', 'send', 'text', 'message', 'calm', 'reassure', 'worries', 'worried']));
+  const soundsOverwhelmed =
+    hasAnyWord(normalized, [
+      'overwhelmed',
+      'stressed',
+      'anxious',
+      'scared',
+      'worried',
+      'spiraling',
+      'alone',
+      'everything',
+      'panic',
+    ]) ||
+    hasAnyPhrase(normalized, ["don't know", 'dont know', 'where to start', 'too much']) ||
+    mentionsParent;
+  const asksForPlan = hasAnyWord(normalized, ['tonight', 'plan', 'schedule']) || hasAnyPhrase(normalized, ['what next']);
+  const asksForVisitPrep = hasAnyWord(normalized, ['visit']) || hasAnyPhrase(normalized, ['care prep']);
+  const mentionsSymptoms = hasAnyWord(normalized, ['chest', 'fever', 'symptom', 'symptoms']) || hasAnyPhrase(normalized, ['feels weird']);
+  const mentionsRefill = hasAnyWord(normalized, ['refill', 'meds', 'medication', 'pharmacy', 'prescription']);
 
-  if (normalized.includes('parent')) {
+  if (wantsParentDraft) {
     return [
-      'Parent-safe update Alex can send:',
-      '"I am in a busy week 7 stretch with midterms, but I have a plan for tonight, school tasks, and a few admin items. I will ask if I need help. THREAD is helping me keep track, and I control what gets shared."',
-      'This reassures without sharing symptoms, medication details, or records. The student controls whether anything more specific leaves the app.',
+      'Here is the parent-safe version I would send:',
+      '"I am in a rough week 7 stretch, but I am handling it. I have a plan for tonight, I know what I am doing next, and I will ask if I need help."',
+      'That gives them something solid without sharing symptoms, medication details, or records. The student controls what leaves THREAD.',
     ].join(' ');
   }
 
-  if (normalized.includes('tonight') || normalized.includes('plan')) {
+  if (soundsOverwhelmed) {
     return [
-      'Tonight:',
-      '1. Make the care decision first and use emergency care if symptoms feel severe, rapidly worse, or unsafe.',
+      "You don't have to sort the whole pile at once.",
+      'I am seeing week 7 pressure: midterms starting in 5 days, sleep below 6.5 hours, a refill due before Friday, missed lab lunches, and parents checking in.',
+      'This stays student-owned unless you choose to share it.',
+      'Quick check: Do you want me to draft the parent-safe version, or keep this between us for now?',
+    ].join(' ');
+  }
+
+  if (asksForPlan) {
+    return [
+      'Tonight, I would not try to win the whole week.',
+      'Make it smaller: 1. care decision first, with emergency care if symptoms are severe, rapidly worse, or unsafe.',
       '2. Send the refill note before the pharmacy window closes.',
       '3. Eat a real recovery meal before the next study block.',
       '4. Do one 45-minute bio practical block, then stop.',
       '5. Protect 11:30 PM lights-out so tomorrow does not start in debt.',
+      'After that, I can turn this into reminders and a parent-safe update if you want one.',
     ].join(' ');
   }
 
-  if (normalized.includes('visit') || normalized.includes('care prep')) {
+  if (asksForVisitPrep) {
     return [
-      'Care visit prep:',
-      'Onset was after the weekend cough, chest tightness and fever note are worse since yesterday, and Alex should bring current meds, stimulant refill timing, and the insurance card status.',
-      'Ask: what care level is right, what red flags should trigger urgent or emergency care, and what class or activity limits matter this week.',
+      'I can make this easier to say out loud.',
+      'Visit note: symptoms changed after the weekend cough, chest tightness and fever are worse since yesterday, current meds include stimulant medication, refill timing matters this week, and insurance card status may need checking.',
+      'Ask the clinician: what care level is right, what red flags should trigger urgent or emergency care, and what class or activity limits matter this week.',
     ].join(' ');
   }
 
-  if (normalized.includes('chest') || normalized.includes('fever') || normalized.includes('symptom')) {
+  if (mentionsSymptoms) {
     return urgentAction
-      ? `Put the care level decision first: ${urgentAction.detail} If symptoms feel severe, rapidly worse, or unsafe, use emergency care now.`
-      : 'care level still comes first. If symptoms feel severe, rapidly worse, or unsafe, use emergency care now; otherwise I can help prepare a short symptom history and choose the right care setting.';
+      ? [
+          'Before we plan around lab, I want to check safety first.',
+          'Are you having trouble breathing, severe or crushing chest pain, fainting, blue or gray lips, or symptoms that are rapidly getting worse?',
+          `If yes, use emergency care now. If not, I can make the symptom note and help choose the right care level: ${urgentAction.detail}`,
+        ].join(' ')
+      : 'care level still comes first. If symptoms feel severe, rapidly worse, or unsafe, use emergency care now. If not, I can make the symptom note and help choose campus clinic, urgent care, or emergency care.';
   }
 
-  if (normalized.includes('refill') || normalized.includes('med') || normalized.includes('pharmacy')) {
+  if (mentionsRefill) {
     return refillAction
-      ? `I can help with the refill next: ${refillAction.detail} Draft to send: "Hi, I have four days left before Friday and want to avoid a gap during midterms. Do you need anything from me to approve or send the refill?"`
+      ? `I can take the refill out of your head. THREAD already knows there are four days left before Friday and midterms are starting. Draft to send: "Hi, I have four days left before Friday and want to avoid a gap during midterms. Do you need anything from me to approve or send the refill?"`
       : 'Your medication task is not currently the top open item, but I can still help prepare a refill note or med list.';
   }
 
-  if (normalized.includes('sleep') || normalized.includes('exam') || normalized.includes('study')) {
+  if (hasAnyWord(normalized, ['sleep', 'exam', 'exams', 'study', 'midterm', 'midterms'])) {
     return sleepAction
-      ? `I would protect tonight around recovery: ${sleepAction.detail}`
+      ? `I would protect tonight around recovery, not perfection: ${sleepAction.detail} If you want, I can make the smallest study plan that still gets you to bed.`
       : 'I can help rebuild the week with class, meals, study blocks, and one protected sleep window.';
   }
 
-  if (normalized.includes('meal') || normalized.includes('food') || normalized.includes('nutrition')) {
+  if (hasAnyWord(normalized, ['meal', 'meals', 'food', 'nutrition', 'lunch', 'hungry'])) {
     return nutritionAction
-      ? `Nutrition depth is on. Next useful move: ${nutritionAction.detail}`
+      ? `Nutrition depth is on, so I can handle this without making it a whole project. Next useful move: ${nutritionAction.detail}`
       : 'I can add Nutrition / Eating Patterns if Alex wants deeper help with lab-day meals. Without that module, I will only keep the missed-meal signal in context.';
   }
 
-  if (normalized.includes('money') || normalized.includes('bill') || normalized.includes('fee')) {
+  if (hasAnyWord(normalized, ['money', 'bill', 'bills', 'fee', 'fees', 'charge', 'charges', 'budget'])) {
     return financialAction
-      ? `Financial Stress depth is on. Next useful move: ${financialAction.detail}`
+      ? `Financial Stress depth is on. We can separate what is urgent, what can wait, and what you may want help paying for. Next useful move: ${financialAction.detail}`
       : 'I can add Financial Stress if Alex wants help sorting lab fees, food-budget pressure, and what can be safely shared with parents.';
   }
 
-  if (normalized.includes('insurance') || normalized.includes('document') || normalized.includes('record')) {
+  if (hasAnyWord(normalized, ['insurance', 'document', 'documents', 'record', 'records', 'form', 'forms'])) {
     return 'I can keep records student-mediated. Add the card, form, receipt, or visit note in Records, and I will remember its status without sharing it.';
   }
 
-  return 'I have already looked across symptoms, refill timing, sleep debt, midterms, meals, records, and money pressure. The highest open items are care level, refill, and week-7 recovery.';
+  return [
+    'I am here, and I am not treating this like one random task.',
+    'I can see symptoms, refill timing, sleep debt, midterms, meals, records, and money pressure colliding.',
+    'Quick check: do you want me to help with the next 30 minutes, the parent text, or the care decision first?',
+  ].join(' ');
 }
 
 async function readState(filePath) {

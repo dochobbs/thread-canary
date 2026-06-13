@@ -107,12 +107,37 @@ describe('canary store', () => {
     expect(persisted.agentMessages).toHaveLength(2);
   });
 
+  it('responds to vague overwhelm with connection, memory, and one focused question', async () => {
+    const { store } = await createTempStore();
+
+    const result = await store.sendAgentMessage("I'm overwhelmed and my mom keeps asking if I'm okay.");
+    const reply = result.reply.text;
+
+    expect(reply).toContain("You don't have to sort the whole pile at once.");
+    expect(reply).toContain('I am seeing week 7 pressure');
+    expect(reply).toContain('student-owned');
+    expect(reply).toContain('Quick check:');
+    expect(reply).toContain('Do you want me to draft the parent-safe version, or keep this between us for now?');
+    expect(reply.match(/\?/g)).toHaveLength(1);
+  });
+
+  it('handles symptom worry as a safety check before planning', async () => {
+    const { store } = await createTempStore();
+
+    const result = await store.sendAgentMessage('My chest feels weird and I have a fever but I also have lab.');
+
+    expect(result.reply.text).toContain('Before we plan around lab');
+    expect(result.reply.text).toContain('trouble breathing');
+    expect(result.reply.text).toContain('use emergency care now');
+    expect(result.reply.text).toContain('If not, I can make the symptom note');
+  });
+
   it('drafts a parent-safe update without exposing private student details', async () => {
     const { store } = await createTempStore();
 
     const result = await store.sendAgentMessage('Draft a parent update that calms worries.');
 
-    expect(result.reply.text).toContain('Parent-safe update');
+    expect(result.reply.text).toContain('Here is the parent-safe version I would send');
     expect(result.reply.text).toContain('student controls');
     expect(result.reply.text).toContain('without sharing symptoms, medication details, or records');
   });
@@ -122,10 +147,11 @@ describe('canary store', () => {
 
     const result = await store.sendAgentMessage('Plan tonight around symptoms, refill, sleep, and midterms.');
 
-    expect(result.reply.text).toContain('Tonight');
+    expect(result.reply.text).toContain('Tonight, I would not try to win the whole week.');
     expect(result.reply.text).toContain('care decision');
     expect(result.reply.text).toContain('refill');
     expect(result.reply.text).toContain('11:30 PM');
+    expect(result.reply.text).toContain('After that, I can turn this into reminders');
   });
 
   it('keeps symptom guidance useful after the urgent action has already been completed', async () => {

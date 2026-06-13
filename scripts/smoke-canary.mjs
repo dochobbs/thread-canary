@@ -95,12 +95,25 @@ async function main() {
     body: JSON.stringify({ text: 'Draft a parent-safe update that calms worries.' }),
   });
   assert(
-    parentPayload.reply?.text?.includes('Parent-safe update'),
+    parentPayload.reply?.text?.includes('Here is the parent-safe version I would send'),
     'Agent did not draft a parent-safe reassurance update.',
   );
   assert(
     parentPayload.reply?.text?.includes('without sharing symptoms, medication details, or records'),
     'Parent-safe update did not preserve student privacy boundaries.',
+  );
+
+  const overwhelmPayload = await request('/api/agent/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text: "I'm overwhelmed and my mom keeps asking if I'm okay." }),
+  });
+  assert(
+    overwhelmPayload.reply?.text?.includes("You don't have to sort the whole pile at once."),
+    'Agent did not acknowledge vague student overwhelm.',
+  );
+  assert(
+    (overwhelmPayload.reply?.text?.match(/\?/g) ?? []).length === 1,
+    'Agent overwhelm reply should ask one focused question.',
   );
 
   console.log(`Canary smoke passed at ${baseUrl}`);

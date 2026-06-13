@@ -30,6 +30,8 @@ Alex is in week 7, with biology lecture on Monday/Wednesday/Friday, chemistry la
 - `Start refill`: drafts the message Alex can send to avoid a medication gap during midterms.
 - `Parent update`: drafts a parent-safe reassurance note without sharing symptoms, medication details, or records.
 
+The agent tone should follow [THREAD Agent Tone](../prompts/thread-agent-tone.md): notice the situation, connect it to remembered context, ask one focused check when needed, and offer a concrete next action.
+
 ## Modules
 
 Always on:
