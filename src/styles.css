@@ -291,6 +291,13 @@ p {
   border-color: rgba(216, 161, 93, 0.28);
 }
 
+.agent-message.working {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 10px;
+  align-items: end;
+}
+
 .agent-message span {
   color: var(--quiet-ivory);
   font-size: 0.68rem;
@@ -302,6 +309,29 @@ p {
 .agent-message p {
   margin: 4px 0 0;
   color: var(--soft-ivory);
+}
+
+.working-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding-bottom: 3px;
+}
+
+.working-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--warm-gold);
+  opacity: 0.42;
+}
+
+.working-dots span:nth-child(2) {
+  opacity: 0.66;
+}
+
+.working-dots span:nth-child(3) {
+  opacity: 0.9;
 }
 
 .agent-tools {

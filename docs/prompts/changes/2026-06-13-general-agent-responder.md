@@ -13,6 +13,7 @@ The tone direction also overcorrected into product and wellness language: too mu
 - Sends the model full demo context: profile, memory, signals, documents, open actions, modules, weekly summary, and recent messages.
 - Records `agent.responder_failed` and falls back locally if the model path fails.
 - Changed local fallback copy to a lower-drama private-operator voice.
+- Added a visible working state and short minimum dwell so local canary replies do not feel instant or scripted.
 - Added tests for arbitrary questions, responder context, and responder failure.
 - Added smoke coverage for an arbitrary lab-TA question.
 

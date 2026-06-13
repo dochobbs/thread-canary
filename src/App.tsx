@@ -18,6 +18,7 @@ import { MemoryProfile } from './components/MemoryProfile';
 import { ModuleDeck } from './components/ModuleDeck';
 import { RoutineOperator } from './components/RoutineOperator';
 import { SafetyPanel } from './components/SafetyPanel';
+import { waitForAgentWorkingDwell } from './domain/agentTiming';
 import type { AgentAction, DeepModule } from './domain/types';
 
 type StudentSection = 'current' | 'timeline' | 'tasks' | 'vault';
@@ -68,12 +69,15 @@ export default function App() {
   }
 
   async function sendAgentMessage(text: string) {
+    const startedAt = Date.now();
     setIsSendingAgent(true);
     try {
       setMutationError(null);
       const result = await sendCanaryAgentMessage(text);
+      await waitForAgentWorkingDwell(startedAt);
       setCanaryState(result.state);
     } catch (error) {
+      await waitForAgentWorkingDwell(startedAt);
       setMutationError(error instanceof Error ? error.message : 'Agent message failed.');
     } finally {
       setIsSendingAgent(false);

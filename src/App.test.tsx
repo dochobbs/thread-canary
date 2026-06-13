@@ -41,6 +41,16 @@ function readBody(init?: RequestInit) {
   return init?.body ? JSON.parse(String(init.body)) : {};
 }
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+  return { promise, resolve, reject };
+}
+
 beforeEach(() => {
   mockState = createMockState();
   vi.stubGlobal(
@@ -227,6 +237,50 @@ describe('THREAD app shell', () => {
         body: JSON.stringify({ text: 'I have chest tightness and fever' }),
       }),
     );
+  });
+
+  it('shows the agent checking context while a reply is in flight', async () => {
+    const user = userEvent.setup();
+    const agentResponse = createDeferred<Response>();
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const path = readPath(input);
+
+      if (path === '/api/canary-state') {
+        return jsonResponse(mockState);
+      }
+
+      if (path === '/api/agent/messages' && init?.method === 'POST') {
+        return agentResponse.promise;
+      }
+
+      return jsonResponse({ error: 'Not found' }, 404);
+    });
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/message agent/i), 'Can you help me email my lab TA?');
+    await user.click(screen.getByRole('button', { name: /send to agent/i }));
+
+    expect(screen.getByText(/checking memory and context/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send to agent/i })).toBeDisabled();
+
+    agentResponse.resolve(
+      new Response(
+        JSON.stringify({
+          reply: { id: 'assistant-message-test', role: 'assistant', text: 'Draft the lab TA email.', createdAt: 'now' },
+          state: {
+            ...mockState,
+            agentMessages: [
+              { id: 'student-message-test', role: 'student', text: 'Can you help me email my lab TA?', createdAt: 'now' },
+              { id: 'assistant-message-test', role: 'assistant', text: 'Draft the lab TA email.', createdAt: 'now' },
+            ],
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+
+    expect(await screen.findByText(/draft the lab ta email/i)).toBeInTheDocument();
   });
 
   it('lets the agent draft a parent-safe reassurance update from a quick tool', async () => {

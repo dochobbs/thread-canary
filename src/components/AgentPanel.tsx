@@ -92,6 +92,17 @@ export function AgentPanel({ studentName = 'Alex Rivera', messages = [], isSendi
             </article>
           ))
         )}
+        {isSending ? (
+          <article className="agent-message assistant working" role="status" aria-label="Agent is checking memory and context">
+            <span>Agent</span>
+            <p>Checking memory and context</p>
+            <div className="working-dots" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
+          </article>
+        ) : null}
       </div>
       <div className="agent-tools" aria-label="Agent tools">
         {agentTools.map(({ label, ariaLabel, prompt, Icon }) => (
