@@ -11,7 +11,7 @@ async function createRunningServer() {
   await mkdir(distDir, { recursive: true });
   await writeFile(join(distDir, 'index.html'), '<!doctype html><div id="root"></div>');
 
-  const store = await createCanaryStore({ filePath: join(dir, 'state.json') });
+  const store = await createCanaryStore({ agentResponder: null, filePath: join(dir, 'state.json') });
   const server = createHttpServer({ store, distDir });
 
   await new Promise((resolve) => {

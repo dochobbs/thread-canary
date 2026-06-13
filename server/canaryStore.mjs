@@ -8,6 +8,203 @@ export const seedProfile = {
   schoolContext:
     'Week 7 at Northview State; biology major with two lab sections, club soccer, work-study, and midterms stacking up.',
   privacyMode: 'Student-owned. Parents can pay, but content stays private unless shared.',
+  demographics: {
+    age: 18,
+    campus: 'Northview State University',
+    residence: 'Hawthorne Hall room 318',
+    major: 'Biology',
+    hometown: 'Cedar Falls, Iowa',
+    chosenName: 'Alex',
+    pronouns: 'they/them',
+  },
+  healthProfile: {
+    conditions: [
+      {
+        name: 'ADHD, combined presentation',
+        status: 'treated since high school',
+        notes: 'Does best when medication, breakfast, and first class stay on a predictable rhythm.',
+      },
+      {
+        name: 'Migraine without aura',
+        status: 'intermittent',
+        notes: 'Two late-week migraines this month, usually after poor sleep and skipped meals.',
+      },
+      {
+        name: 'Exercise-induced bronchospasm history',
+        status: 'remote but relevant with chest symptoms',
+        notes: 'Had an albuterol inhaler in high school; not sure whether the dorm inhaler is current.',
+      },
+      {
+        name: 'Left ankle sprain',
+        status: 'improving',
+        notes: 'Rolled ankle three weeks ago at club soccer. Sore after two practices this week.',
+      },
+    ],
+    currentMedications: [
+      {
+        name: 'lisdexamfetamine',
+        label: 'Stimulant prescription label',
+        dose: '30 mg',
+        schedule: '8:00 AM on class days',
+        purpose: 'ADHD',
+        refillStatus: '4 days left; prescriber approval may be needed before Friday',
+      },
+      {
+        name: 'sumatriptan',
+        label: 'Migraine rescue medication',
+        dose: '50 mg',
+        schedule: 'as needed for migraine, per prescription label',
+        purpose: 'Migraine rescue',
+        refillStatus: 'Enough supply for this month',
+      },
+      {
+        name: 'ibuprofen',
+        label: 'OTC pain reliever',
+        dose: '400 mg',
+        schedule: 'as needed, with food when possible',
+        purpose: 'Headache or ankle soreness',
+        refillStatus: 'Student supply in dorm',
+      },
+    ],
+    allergies: ['amoxicillin - rash as a child'],
+    immunizations: [
+      { name: 'MMR', status: 'cleared', detail: 'Campus immunization record accepted.' },
+      { name: 'Meningococcal ACWY', status: 'cleared', detail: 'Submitted during orientation.' },
+      { name: 'Influenza', status: 'due this season', detail: 'Student health flu clinic starts next week.' },
+    ],
+    currentConcern: {
+      summary: 'Cough after weekend tailgate, now fever and chest tightness worse since yesterday.',
+      onset: 'Scratchy throat and cough started after Saturday tailgate; fever and chest tightness showed up Week 7 Monday night.',
+      redFlags: [
+        'chest tightness plus fever worse since yesterday',
+        'resting heart rate running higher than baseline',
+        'remote exercise-induced bronchospasm history',
+      ],
+      recentSelfCare: ['acetaminophen once last night', 'missed lunch before chemistry lab', 'slept under 6 hours three nights'],
+      visitPrep: [
+        'Bring stimulant prescription label and insurance card front image.',
+        'Ask what symptoms should trigger urgent or emergency care.',
+        'Ask whether class, lab, or soccer should be limited this week.',
+      ],
+    },
+    carePreferences: [
+      'Use Alex and they/them in care settings.',
+      'Prefers urgent care over campus clinic after 6 PM.',
+      'Does not want parent contact unless Alex asks first.',
+      'Wants a short written symptom timeline before visits because recall gets worse when stressed.',
+    ],
+  },
+  careTimeline: [
+    {
+      id: 'tailgate-last-month',
+      when: 'Week 4 Saturday night',
+      title: 'First tailgate went long',
+      detail: 'Lost Sunday recovery time and asked for private, nonjudgmental party-safety support later.',
+      source: 'student memory',
+    },
+    {
+      id: 'ankle-sprain',
+      when: 'Week 5 Tuesday',
+      title: 'Rolled left ankle at club soccer',
+      detail: 'Improving, but soreness returns after practice when sleep is low.',
+      source: 'sports note',
+    },
+    {
+      id: 'weekend-cough',
+      when: 'Week 7 Saturday to Monday',
+      title: 'Cough turned into fever and chest tightness',
+      detail: 'Cough started after the tailgate; fever and chest tightness worsened Monday night and now affect lab and soccer decisions.',
+      source: 'student report plus wearable trend',
+    },
+    {
+      id: 'refill-window-opened',
+      when: 'Week 7 Monday morning',
+      title: 'Stimulant refill window opened',
+      detail: 'Four days left. Prior authorization or prescriber approval can slow this down.',
+      source: 'medication module',
+    },
+    {
+      id: 'lab-lunch-misses',
+      when: 'Weeks 6 and 7 Tuesdays/Thursdays',
+      title: 'Chemistry lab keeps swallowing lunch',
+      detail: 'Skipped lunch three lab days, followed by headaches or late-night food crashes.',
+      source: 'routine memory',
+    },
+  ],
+  wearableSummary: {
+    lastSynced: 'Today at 7:12 AM from Apple Health demo import',
+    sleep: '5h 42m average over the last 3 nights; bedtime shifted past 1:00 AM twice.',
+    strain: 'Resting heart rate is up 9 bpm versus Alex baseline; HRV is down 18%.',
+    recovery: 'Stress minutes are elevated on lab days and after late practices.',
+    activity: 'Two club soccer practices this week plus normal campus walking; ankle soreness noted after practice.',
+  },
+  academicCalendar: [
+    {
+      id: 'bio-practical',
+      when: 'Week 8 Monday',
+      title: 'BIO 111 practical',
+      type: 'exam',
+      impact: 'Needs two focused study blocks, but not at the expense of symptom care.',
+    },
+    {
+      id: 'chem-midterm',
+      when: 'Week 8 Wednesday',
+      title: 'CHEM 101 midterm',
+      type: 'exam',
+      impact: 'Exam cluster raises sleep debt and refill risk.',
+    },
+    {
+      id: 'writing-draft',
+      when: 'Week 8 Friday',
+      title: 'Writing seminar draft',
+      type: 'deadline',
+      impact: 'Can be reduced to outline plus office-hours question if illness worsens.',
+    },
+    {
+      id: 'work-study-shift',
+      when: 'Week 7 Thursday evening',
+      title: 'Library work-study shift',
+      type: 'work',
+      impact: 'May need coverage if fever continues.',
+    },
+  ],
+  supportMap: [
+    {
+      name: 'Jordan',
+      relationship: 'roommate',
+      canHelpWith: 'rides, meals, quiet check-ins, pharmacy pickup if Alex asks',
+      shareRule: 'Can know logistics, not symptoms or medication details unless Alex chooses.',
+    },
+    {
+      name: 'Aunt Lena',
+      relationship: 'trusted adult',
+      canHelpWith: 'calm second opinion, insurance questions, parent pressure buffer',
+      shareRule: 'Contact only after Alex explicitly opts in.',
+    },
+    {
+      name: 'Sam',
+      relationship: 'resident assistant',
+      canHelpWith: 'campus resources, room concerns, urgent logistics',
+      shareRule: 'Use for practical support, not private health details by default.',
+    },
+  ],
+  familyContext: [
+    'Parents are paying for THREAD and tuition but do not have access to student memory.',
+    'Mom texts more when Alex sounds vague; Dad tends to call the school if he feels shut out.',
+    'Best parent updates are boring, short, and logistics-only.',
+  ],
+  finances: {
+    status: 'Work-study payday is Friday; dining dollars are tight until then.',
+    openItems: ['Chemistry lab fee due this week', 'Dining shortfall on lab days', 'Possible urgent care copay'],
+    parentBoundary: 'Can ask parents for payment help without exposing symptoms, medication, sexual health, or counseling details.',
+  },
+  insurance: {
+    carrier: 'BlueCross parent plan',
+    plan: 'PPO student dependent coverage',
+    studentHealthCenter: 'Northview Student Health, East Campus Clinic',
+    preferredPharmacy: 'Campus Corner Pharmacy',
+    missingItems: ['Back of insurance card', 'Member services phone number', 'Urgent care copay amount'],
+  },
   memory: [
     'Week 7 at Northview State; first time managing college health, money, food, and classes without a parent calendar.',
     'Monday/Wednesday/Friday biology lecture at 9:10 AM; Tuesday/Thursday chemistry lab runs through lunch.',
@@ -257,17 +454,27 @@ function createSeedState() {
 }
 
 function normalizeState(state) {
+  const profile = state.profile ?? {};
   return {
     ...state,
     profile: {
       ...structuredClone(seedProfile),
-      ...state.profile,
-      activeModuleIds: state.profile?.activeModuleIds ?? seedProfile.activeModuleIds,
-      availableModuleIds: state.profile?.availableModuleIds ?? seedProfile.availableModuleIds,
-      memory: state.profile?.memory ?? seedProfile.memory,
-      trustedContacts: state.profile?.trustedContacts ?? seedProfile.trustedContacts,
-      signals: state.profile?.signals ?? seedProfile.signals,
-      documents: state.profile?.documents ?? seedProfile.documents,
+      ...profile,
+      demographics: profile.demographics ?? seedProfile.demographics,
+      healthProfile: profile.healthProfile ?? seedProfile.healthProfile,
+      careTimeline: profile.careTimeline ?? seedProfile.careTimeline,
+      wearableSummary: profile.wearableSummary ?? seedProfile.wearableSummary,
+      academicCalendar: profile.academicCalendar ?? seedProfile.academicCalendar,
+      supportMap: profile.supportMap ?? seedProfile.supportMap,
+      familyContext: profile.familyContext ?? seedProfile.familyContext,
+      finances: profile.finances ?? seedProfile.finances,
+      insurance: profile.insurance ?? seedProfile.insurance,
+      activeModuleIds: profile.activeModuleIds ?? seedProfile.activeModuleIds,
+      availableModuleIds: profile.availableModuleIds ?? seedProfile.availableModuleIds,
+      memory: profile.memory ?? seedProfile.memory,
+      trustedContacts: profile.trustedContacts ?? seedProfile.trustedContacts,
+      signals: profile.signals ?? seedProfile.signals,
+      documents: profile.documents ?? seedProfile.documents,
     },
     completedActionIds: state.completedActionIds ?? [],
     activatedModuleIds: state.activatedModuleIds ?? [],
@@ -533,12 +740,37 @@ function buildAgentResponderContext(state) {
   };
 }
 
-function createAgentMessage(state, role, text) {
-  return {
+function createAgentMessage(state, role, text, metadata = {}) {
+  const message = {
     id: `${Date.now()}-${state.agentMessages.length + 1}`,
     role,
     text,
     createdAt: new Date().toISOString(),
+  };
+
+  if (metadata.source) {
+    message.source = metadata.source;
+  }
+  if (metadata.model) {
+    message.model = metadata.model;
+  }
+
+  return message;
+}
+
+function normalizeResponderReply(result) {
+  if (typeof result === 'string') {
+    return { text: result.trim(), source: 'llm' };
+  }
+
+  if (!result || typeof result !== 'object') {
+    return { text: '', source: 'fallback' };
+  }
+
+  return {
+    text: String(result.text ?? '').trim(),
+    source: result.source === 'fallback' ? 'fallback' : 'llm',
+    model: result.model ? String(result.model) : undefined,
   };
 }
 
@@ -795,22 +1027,34 @@ export async function createCanaryStore(options = {}) {
       const studentMessage = createAgentMessage(state, 'student', normalized);
       state.agentMessages.push(studentMessage);
 
-      let replyText;
+      let responderReply = { text: '', source: 'fallback' };
       if (agentResponder) {
         try {
-          const responderText = await agentResponder({
+          const responderResult = await agentResponder({
             text: normalized,
             context: buildAgentResponderContext(state),
           });
-          replyText = String(responderText ?? '').trim();
+          responderReply = normalizeResponderReply(responderResult);
         } catch (error) {
           appendEvent(state, 'agent.responder_failed', { message: error.message });
         }
       }
 
-      const assistantMessage = createAgentMessage(state, 'assistant', replyText || buildAgentReply(state, normalized));
+      const assistantMessage = createAgentMessage(
+        state,
+        'assistant',
+        responderReply.text || buildAgentReply(state, normalized),
+        responderReply.text
+          ? { source: responderReply.source, model: responderReply.model }
+          : { source: 'fallback' },
+      );
       state.agentMessages.push(assistantMessage);
-      appendEvent(state, 'agent.message', { studentMessageId: studentMessage.id, replyId: assistantMessage.id });
+      appendEvent(state, 'agent.message', {
+        studentMessageId: studentMessage.id,
+        replyId: assistantMessage.id,
+        source: assistantMessage.source,
+        model: assistantMessage.model,
+      });
 
       return {
         state: await persist(),

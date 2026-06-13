@@ -7,7 +7,7 @@ import { createCanaryStore } from './canaryStore.mjs';
 async function createTempStore(options = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'college-os-canary-'));
   const filePath = join(dir, 'state.json');
-  const store = await createCanaryStore({ filePath, ...options });
+  const store = await createCanaryStore({ agentResponder: null, filePath, ...options });
   return { filePath, store };
 }
 
@@ -19,6 +19,26 @@ describe('canary store', () => {
 
     expect(state.profile.name).toBe('Alex Rivera');
     expect(state.profile.schoolContext).toContain('Week 7');
+    expect(state.profile.demographics).toMatchObject({
+      age: 18,
+      campus: 'Northview State University',
+      residence: 'Hawthorne Hall room 318',
+      pronouns: 'they/them',
+    });
+    expect(state.profile.healthProfile.currentMedications).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'lisdexamfetamine',
+          dose: '30 mg',
+          refillStatus: expect.stringContaining('4 days left'),
+        }),
+      ]),
+    );
+    expect(state.profile.healthProfile.allergies).toContain('amoxicillin - rash as a child');
+    expect(state.profile.healthProfile.currentConcern.redFlags).toContain('chest tightness plus fever worse since yesterday');
+    expect(state.profile.careTimeline.map((event) => event.id)).toContain('weekend-cough');
+    expect(state.profile.wearableSummary.sleep).toContain('5h 42m');
+    expect(state.profile.academicCalendar.map((event) => event.title)).toContain('BIO 111 practical');
     expect(state.profile.activeModuleIds).toContain('care-navigation');
     expect(state.profile.availableModuleIds).toHaveLength(10);
     expect(state.profile.availableModuleIds).toContain('nutrition-patterns');
@@ -112,19 +132,31 @@ describe('canary store', () => {
     const { store } = await createTempStore({
       agentResponder: async (request) => {
         receivedRequest = request;
-        return 'Email Professor Lin: I may need to miss lab because I am making a care decision first.';
+        return {
+          text: 'Email Professor Lin: I may need to miss lab because I am making a care decision first.',
+          source: 'llm',
+          model: 'demo-model',
+        };
       },
     });
 
     const result = await store.sendAgentMessage('What should I say to my professor if I miss lab?');
 
     expect(result.reply.text).toContain('Email Professor Lin');
+    expect(result.reply.source).toBe('llm');
+    expect(result.reply.model).toBe('demo-model');
     expect(receivedRequest.text).toBe('What should I say to my professor if I miss lab?');
     expect(receivedRequest.context.profile.name).toBe('Alex Rivera');
+    expect(receivedRequest.context.profile.healthProfile.currentMedications[0].name).toBe('lisdexamfetamine');
+    expect(receivedRequest.context.profile.careTimeline.map((event) => event.id)).toContain('weekend-cough');
+    expect(receivedRequest.context.profile.academicCalendar.map((event) => event.title)).toContain('CHEM 101 midterm');
     expect(receivedRequest.context.openActions.map((action) => action.id)).toContain('care-red-flag');
     expect(receivedRequest.context.recentMessages).toEqual([
       expect.objectContaining({ role: 'student', text: 'What should I say to my professor if I miss lab?' }),
     ]);
+    expect(result.state.agentMessages).toEqual(
+      expect.arrayContaining([expect.objectContaining({ role: 'assistant', source: 'llm', model: 'demo-model' })]),
+    );
   });
 
   it('falls back to a private-operator answer when the general responder fails', async () => {
@@ -138,6 +170,7 @@ describe('canary store', () => {
 
     expect(result.reply.text).toContain('I can help with that.');
     expect(result.reply.text).toContain('draft');
+    expect(result.reply.source).toBe('fallback');
     expect(result.state.events).toEqual(
       expect.arrayContaining([expect.objectContaining({ type: 'agent.responder_failed' })]),
     );

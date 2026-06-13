@@ -298,12 +298,34 @@ p {
   align-items: end;
 }
 
+.agent-message-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .agent-message span {
   color: var(--quiet-ivory);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.agent-message .agent-source {
+  border: 1px solid rgba(245, 240, 232, 0.14);
+  border-radius: 999px;
+  padding: 2px 6px;
+  letter-spacing: 0.08em;
+}
+
+.agent-message .agent-source.llm {
+  color: var(--seafoam);
+}
+
+.agent-message .agent-source.fallback {
+  color: var(--warm-gold);
 }
 
 .agent-message p {

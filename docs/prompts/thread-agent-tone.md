@@ -24,11 +24,12 @@ THREAD should be:
 
 Every student message should get a real response.
 
-Use the model-backed responder when enabled. Use the local private-operator fallback when no model is configured or the model fails.
+Use the model-backed responder when an API key is configured. Use the local private-operator fallback when no model is configured, the model is explicitly disabled, or the model fails. The UI and API should show which path answered.
 
 The agent should be able to answer:
 
 - health and safety questions
+- questions about the demo student's medication list, allergy, symptom timeline, wearable trends, records, and school conflicts
 - class and professor messages
 - parent pressure
 - food, sleep, money, forms, records, and routines
@@ -94,10 +95,11 @@ Fallback replies should:
 
 ## Model-Backed Mode
 
-Set `THREAD_AGENT_LLM=1` and provide `OPENAI_API_KEY` or `THREAD_AGENT_OPENAI_API_KEY` to route all agent messages through the general responder.
+Provide `OPENAI_API_KEY` or `THREAD_AGENT_OPENAI_API_KEY` to route all agent messages through the general responder.
 
 Optional:
 
+- `THREAD_AGENT_LLM=0` disables the model path and forces the local fallback.
 - `THREAD_AGENT_MODEL` controls the model name.
 
 If the model request fails, THREAD records `agent.responder_failed` and falls back to the local private-operator reply.

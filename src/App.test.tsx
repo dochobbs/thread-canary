@@ -147,6 +147,8 @@ beforeEach(() => {
           id: 'assistant-message-test',
           role: 'assistant' as const,
           text: replyText,
+          source: 'llm' as const,
+          model: 'demo-model',
           createdAt: '2026-06-13T20:00:01.000Z',
         };
         mockState = {
@@ -230,6 +232,7 @@ describe('THREAD app shell', () => {
     await user.click(screen.getByRole('button', { name: /send to agent/i }));
 
     expect(await screen.findByText(/put the care level decision first/i)).toBeInTheDocument();
+    expect(screen.getByText(/llm/i)).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith(
       '/api/agent/messages',
       expect.objectContaining({
@@ -267,12 +270,26 @@ describe('THREAD app shell', () => {
     agentResponse.resolve(
       new Response(
         JSON.stringify({
-          reply: { id: 'assistant-message-test', role: 'assistant', text: 'Draft the lab TA email.', createdAt: 'now' },
+          reply: {
+            id: 'assistant-message-test',
+            role: 'assistant',
+            text: 'Draft the lab TA email.',
+            source: 'llm',
+            model: 'demo-model',
+            createdAt: 'now',
+          },
           state: {
             ...mockState,
             agentMessages: [
               { id: 'student-message-test', role: 'student', text: 'Can you help me email my lab TA?', createdAt: 'now' },
-              { id: 'assistant-message-test', role: 'assistant', text: 'Draft the lab TA email.', createdAt: 'now' },
+              {
+                id: 'assistant-message-test',
+                role: 'assistant',
+                text: 'Draft the lab TA email.',
+                source: 'llm',
+                model: 'demo-model',
+                createdAt: 'now',
+              },
             ],
           },
         }),

@@ -87,7 +87,12 @@ export function AgentPanel({ studentName = 'Alex Rivera', messages = [], isSendi
         ) : (
           messages.map((message) => (
             <article className={`agent-message ${message.role}`} key={message.id}>
-              <span>{message.role === 'student' ? 'You' : 'Agent'}</span>
+              <div className="agent-message-meta">
+                <span>{message.role === 'student' ? 'You' : 'Agent'}</span>
+                {message.role === 'assistant' && message.source ? (
+                  <span className={`agent-source ${message.source}`}>{message.source}</span>
+                ) : null}
+              </div>
               <p>{message.text}</p>
             </article>
           ))

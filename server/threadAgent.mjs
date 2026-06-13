@@ -16,6 +16,12 @@ Voice:
 
 Behavior:
 - Answer any question you can answer from the student context or general knowledge.
+- Treat the supplied student record as the source of truth. Use it actively: meds,
+  allergies, symptoms, wearable signals, school calendar, documents, support rules,
+  family pressure, and enabled/on-demand modules.
+- If the student asks what you know, summarize the relevant record plainly.
+- If the student asks what to tell a clinician, parent, professor, roommate, or RA,
+  draft the message or visit note with the right privacy boundary.
 - If a question needs action, offer the concrete artifact: draft, checklist, plan, message, note, comparison, reminder, or record update.
 - If the student is vague or stressed, ask the one question that changes what happens next.
 - If symptoms or safety are involved, check immediate danger before planning around class, work, sports, or parents.
@@ -26,9 +32,10 @@ Behavior:
 export function createThreadAgentResponder(options = {}) {
   const env = options.env ?? process.env;
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
-  const enabled = env.THREAD_AGENT_LLM === '1' || env.THREAD_AGENT_LLM === 'true';
   const apiKey = env.THREAD_AGENT_OPENAI_API_KEY ?? env.OPENAI_API_KEY;
   const model = env.THREAD_AGENT_MODEL ?? 'gpt-5.4-mini';
+  const disabled = ['0', 'false', 'off'].includes(String(env.THREAD_AGENT_LLM ?? '').toLowerCase());
+  const enabled = !disabled && Boolean(apiKey);
 
   if (!enabled || !apiKey || typeof fetchImpl !== 'function') {
     return null;
@@ -68,7 +75,7 @@ export function createThreadAgentResponder(options = {}) {
     if (!reply) {
       throw new Error('OpenAI response did not include output text.');
     }
-    return reply;
+    return { text: reply, source: 'llm', model };
   };
 }
 
@@ -79,15 +86,7 @@ function buildAgentInput(text, context) {
     'Student context:',
     JSON.stringify(
       {
-        profile: {
-          name: context.profile.name,
-          year: context.profile.year,
-          schoolContext: context.profile.schoolContext,
-          trustedContacts: context.profile.trustedContacts,
-        },
-        memory: context.profile.memory,
-        signals: context.profile.signals,
-        documents: context.profile.documents,
+        profile: context.profile,
         openActions: context.openActions,
         activeModules: context.activeModules,
         recommendedModules: context.recommendedModules,

@@ -11,6 +11,8 @@ export interface AgentMessage {
   id: string;
   role: 'student' | 'assistant';
   text: string;
+  source?: 'llm' | 'fallback';
+  model?: string;
   createdAt: string;
 }
 

@@ -1,4 +1,5 @@
 const baseUrl = process.env.CANARY_URL ?? 'http://127.0.0.1:8787';
+const expectLlmAgent = process.env.EXPECT_LLM_AGENT === '1';
 
 function assert(condition, message) {
   if (!condition) {
@@ -24,6 +25,18 @@ async function request(path, options = {}) {
   return payload;
 }
 
+function assertAgentReply(payload, label) {
+  assert(payload.reply?.text?.trim().length > 0, `${label} did not return reply text.`);
+  assert(['llm', 'fallback'].includes(payload.reply?.source), `${label} did not include agent reply provenance.`);
+  if (expectLlmAgent) {
+    assert(payload.reply.source === 'llm', `${label} expected source=llm but got ${payload.reply.source}.`);
+  }
+  assert(
+    payload.state?.agentMessages?.some((message) => message.role === 'assistant' && message.source === payload.reply.source),
+    `${label} conversation did not persist reply provenance through the API.`,
+  );
+}
+
 async function main() {
   const health = await request('/api/health');
   assert(health.ok === true, 'Health endpoint did not return ok=true.');
@@ -40,6 +53,15 @@ async function main() {
   assert(
     state.profile?.availableModuleIds?.length === 10,
     'Canary state did not include the full on-demand module library.',
+  );
+  assert(state.profile?.demographics?.age === 18, 'Canary state did not include rich student demographics.');
+  assert(
+    state.profile?.healthProfile?.currentMedications?.some((medication) => medication.name === 'lisdexamfetamine'),
+    'Canary state did not include the demo medication list.',
+  );
+  assert(
+    state.profile?.careTimeline?.some((event) => event.id === 'weekend-cough'),
+    'Canary state did not include the demo care timeline.',
   );
   assert(Array.isArray(state.actions) && state.actions.length > 0, 'Canary state did not include agent actions.');
 
@@ -81,53 +103,61 @@ async function main() {
     method: 'POST',
     body: JSON.stringify({ text: 'I have chest tightness and fever. What should I do?' }),
   });
-  assert(
-    agentPayload.reply?.text?.toLowerCase().includes('care level'),
-    'Agent message did not return a state-grounded care-level reply.',
-  );
-  assert(
-    agentPayload.state?.agentMessages?.some((message) => message.role === 'assistant'),
-    'Agent conversation did not persist through the API.',
-  );
+  assertAgentReply(agentPayload, 'Symptom agent message');
+  if (agentPayload.reply.source === 'fallback') {
+    assert(
+      agentPayload.reply.text.toLowerCase().includes('care level'),
+      'Fallback symptom reply did not return a state-grounded care-level reply.',
+    );
+  }
 
   const parentPayload = await request('/api/agent/messages', {
     method: 'POST',
     body: JSON.stringify({ text: 'Draft a parent-safe update that calms worries.' }),
   });
-  assert(
-    parentPayload.reply?.text?.includes('Send this:'),
-    'Agent did not draft a parent-safe reassurance update.',
-  );
-  assert(
-    parentPayload.reply?.text?.includes('without handing over symptoms, medication details, or records'),
-    'Parent-safe update did not preserve student privacy boundaries.',
-  );
+  assertAgentReply(parentPayload, 'Parent-safe agent message');
+  if (parentPayload.reply.source === 'fallback') {
+    assert(
+      parentPayload.reply.text.includes('Send this:'),
+      'Fallback agent did not draft a parent-safe reassurance update.',
+    );
+    assert(
+      parentPayload.reply.text.includes('without handing over symptoms, medication details, or records'),
+      'Fallback parent-safe update did not preserve student privacy boundaries.',
+    );
+  }
 
   const overwhelmPayload = await request('/api/agent/messages', {
     method: 'POST',
     body: JSON.stringify({ text: "I'm overwhelmed and my mom keeps asking if I'm okay." }),
   });
-  assert(
-    overwhelmPayload.reply?.text?.includes('Yeah. This is getting loud.'),
-    'Agent did not acknowledge vague student overwhelm.',
-  );
-  assert(
-    (overwhelmPayload.reply?.text?.match(/\?/g) ?? []).length === 1,
-    'Agent overwhelm reply should ask one focused question.',
-  );
+  assertAgentReply(overwhelmPayload, 'Overwhelm agent message');
+  if (overwhelmPayload.reply.source === 'fallback') {
+    assert(
+      overwhelmPayload.reply.text.includes('Yeah. This is getting loud.'),
+      'Fallback agent did not acknowledge vague student overwhelm.',
+    );
+    assert(
+      (overwhelmPayload.reply.text.match(/\?/g) ?? []).length === 1,
+      'Fallback overwhelm reply should ask one focused question.',
+    );
+  }
 
   const arbitraryPayload = await request('/api/agent/messages', {
     method: 'POST',
     body: JSON.stringify({ text: 'What should I say to my lab TA if I miss lab?' }),
   });
-  assert(
-    arbitraryPayload.reply?.text?.includes('I can help with that.'),
-    'Agent did not respond to an arbitrary student question.',
-  );
-  assert(
-    arbitraryPayload.reply?.text?.includes('draft'),
-    'Arbitrary-question fallback did not offer a concrete next artifact.',
-  );
+  assertAgentReply(arbitraryPayload, 'Arbitrary agent message');
+  if (arbitraryPayload.reply.source === 'fallback') {
+    assert(
+      arbitraryPayload.reply.text.includes('I can help with that.'),
+      'Fallback agent did not respond to an arbitrary student question.',
+    );
+    assert(
+      arbitraryPayload.reply.text.includes('draft'),
+      'Arbitrary-question fallback did not offer a concrete next artifact.',
+    );
+  }
 
   console.log(`Canary smoke passed at ${baseUrl}`);
 }
