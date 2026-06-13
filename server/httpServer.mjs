@@ -89,7 +89,7 @@ async function sendStaticOrIndex(response, distDir, pathname) {
 
 async function routeApi(request, response, store, pathname) {
   if (request.method === 'GET' && pathname === '/api/health') {
-    sendJson(response, 200, { ok: true, service: 'college-life-os-canary' });
+    sendJson(response, 200, { ok: true, service: 'thread-canary' });
     return;
   }
 

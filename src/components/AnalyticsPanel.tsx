@@ -11,8 +11,8 @@ export function AnalyticsPanel({ summary }: AnalyticsPanelProps) {
       <div className="section-heading">
         <Activity aria-hidden="true" />
         <div>
-          <p className="eyebrow">Private analytics</p>
-          <h2>Weekly Readout</h2>
+          <p className="eyebrow">Supporting context</p>
+          <h2>Context Readout</h2>
         </div>
       </div>
       <p className="summary-headline">{summary.headline}</p>

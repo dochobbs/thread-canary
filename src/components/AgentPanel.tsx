@@ -1,14 +1,21 @@
 import { FormEvent, useState } from 'react';
-import { Bot, Send, ShieldCheck } from 'lucide-react';
+import { Send } from 'lucide-react';
 import type { AgentMessage } from '../api/client';
 
 interface AgentPanelProps {
+  studentName?: string;
   messages?: AgentMessage[];
   isSending?: boolean;
   onSendMessage?: (text: string) => Promise<void> | void;
 }
 
-export function AgentPanel({ messages = [], isSending = false, onSendMessage }: AgentPanelProps) {
+const defaultInsights = [
+  'Sleep has been below 6.5h',
+  'Medication refill due Friday',
+  'Insurance form still waiting',
+];
+
+export function AgentPanel({ studentName = 'Maya', messages = [], isSending = false, onSendMessage }: AgentPanelProps) {
   const [draft, setDraft] = useState('');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -24,20 +31,23 @@ export function AgentPanel({ messages = [], isSending = false, onSendMessage }: 
 
   return (
     <section className="agent-panel" aria-label="Agent conversation">
-      <div className="section-heading">
-        <Bot aria-hidden="true" />
+      <div className="agent-presence">
+        <span className="thread-ring" aria-hidden="true" />
         <div>
           <p className="eyebrow">Quiet operator</p>
-          <h2>Agent</h2>
+          <h2>Good morning, {studentName}.</h2>
         </div>
       </div>
+      <p className="agent-lede">I've been keeping track.</p>
       <div className="agent-thread" aria-live="polite">
         {messages.length === 0 ? (
-          <div className="agent-message assistant">
-            <p>
-              I am watching the week across symptoms, sleep, meds, class load, documents, and safety rules. I
-              will ask before adding deeper support or contacting anyone.
-            </p>
+          <div className="agent-insight">
+            <ul>
+              {defaultInsights.map((insight) => (
+                <li key={insight}>{insight}</li>
+              ))}
+            </ul>
+            <p>I think these may be connected.</p>
           </div>
         ) : (
           messages.map((message) => (
@@ -64,7 +74,7 @@ export function AgentPanel({ messages = [], isSending = false, onSendMessage }: 
         </div>
       </form>
       <div className="trust-strip">
-        <ShieldCheck aria-hidden="true" />
+        <span className="thread-ring small" aria-hidden="true" />
         <span>Student-owned memory. No parent, school, or clinic sharing unless you choose it.</span>
       </div>
     </section>

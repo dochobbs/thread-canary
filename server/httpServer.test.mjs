@@ -48,7 +48,7 @@ describe('canary HTTP server', () => {
       const state = await stateResponse.json();
 
       expect(healthResponse.status).toBe(200);
-      expect(health).toEqual({ ok: true, service: 'college-life-os-canary' });
+      expect(health).toEqual({ ok: true, service: 'thread-canary' });
       expect(stateResponse.status).toBe(200);
       expect(state.profile.name).toBe('Maya');
       expect(state.actions.map((action) => action.id)).toContain('care-red-flag');

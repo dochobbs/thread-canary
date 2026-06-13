@@ -13,8 +13,8 @@ export function RoutineOperator() {
       <div className="section-heading">
         <CalendarCheck aria-hidden="true" />
         <div>
-          <p className="eyebrow">Low-friction follow-through</p>
-          <h2>Routine Operator</h2>
+          <p className="eyebrow">Active thread</p>
+          <h2>Current</h2>
         </div>
       </div>
       <div className="routine-list">

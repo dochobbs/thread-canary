@@ -11,7 +11,7 @@ const store = await createCanaryStore({ filePath: stateFilePath });
 const server = createHttpServer({ store, distDir });
 
 server.listen(port, host, () => {
-  console.log(`College Life OS canary running at http://${host}:${port}`);
+  console.log(`THREAD canary running at http://${host}:${port}`);
 });
 
 function shutdown(signal) {

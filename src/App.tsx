@@ -20,19 +20,18 @@ import { RoutineOperator } from './components/RoutineOperator';
 import { SafetyPanel } from './components/SafetyPanel';
 import type { AgentAction, DeepModule } from './domain/types';
 
-type StudentTool = 'plan' | 'memory' | 'modules' | 'records' | 'safety';
+type StudentSection = 'current' | 'timeline' | 'tasks' | 'vault';
 
-const studentTools: Array<{ id: StudentTool; label: string }> = [
-  { id: 'plan', label: 'Plan' },
-  { id: 'memory', label: 'Memory' },
-  { id: 'modules', label: 'Modules' },
-  { id: 'records', label: 'Records' },
-  { id: 'safety', label: 'Safety' },
+const threadSections: Array<{ id: StudentSection; label: string }> = [
+  { id: 'current', label: 'Current' },
+  { id: 'timeline', label: 'Timeline' },
+  { id: 'tasks', label: 'Tasks' },
+  { id: 'vault', label: 'Vault' },
 ];
 
 export default function App() {
   const [canaryState, setCanaryState] = useState<CanaryState | null>(null);
-  const [activeTool, setActiveTool] = useState<StudentTool>('plan');
+  const [activeSection, setActiveSection] = useState<StudentSection>('current');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [isSendingAgent, setIsSendingAgent] = useState(false);
@@ -108,20 +107,20 @@ export default function App() {
     }
   }
 
-  function renderActiveTool() {
+  function renderActiveSection() {
     if (!canaryState) {
       return null;
     }
 
-    switch (activeTool) {
-      case 'memory':
+    switch (activeSection) {
+      case 'timeline':
         return (
           <>
             <LifeAuditPanel />
             <MemoryProfile profile={canaryState.profile} isSaving={isSavingMemory} onAddMemory={addMemory} />
           </>
         );
-      case 'modules':
+      case 'tasks':
         return (
           <ModuleDeck
             activeModules={canaryState.activeModules}
@@ -130,13 +129,14 @@ export default function App() {
             onActivate={activateModule}
           />
         );
-      case 'records':
+      case 'vault':
         return (
-          <DataVault profile={canaryState.profile} isSaving={isSavingDocument} onAddDocument={addDocument} />
+          <>
+            <DataVault profile={canaryState.profile} isSaving={isSavingDocument} onAddDocument={addDocument} />
+            <SafetyPanel profile={canaryState.profile} />
+          </>
         );
-      case 'safety':
-        return <SafetyPanel profile={canaryState.profile} />;
-      case 'plan':
+      case 'current':
       default:
         return (
           <>
@@ -149,17 +149,25 @@ export default function App() {
 
   return (
     <main className="app-shell">
-      <section className="hero">
-        <div>
-          <p className="eyebrow">Private agent for college life</p>
-          <h1>College Life OS</h1>
-          <p>Tell it your life once. It remembers, watches, and helps before things fall apart.</p>
+      <section className="brand-bar" aria-label="THREAD">
+        <div className="brand-lockup">
+          <span className="continuity-mark" aria-hidden="true">
+            <span className="mark-ring" />
+            <span className="mark-line" />
+            <span className="mark-node" />
+          </span>
+          <div>
+            <p className="eyebrow">Memory-driven life agent</p>
+            <h1>THREAD</h1>
+          </div>
         </div>
+        <p>Your life. Understood. What matters next.</p>
       </section>
 
       <div className="focus-layout">
         <section className="today-column" aria-label="Today">
           <AgentPanel
+            studentName={canaryState?.profile.name}
             messages={canaryState?.agentMessages ?? []}
             isSending={isSendingAgent}
             onSendMessage={canaryState ? sendAgentMessage : undefined}
@@ -189,23 +197,27 @@ export default function App() {
           ) : null}
         </section>
 
-        <aside className="tool-drawer" aria-label="Student tools">
-          <div className="tab-list" role="tablist" aria-label="Student tools">
-            {studentTools.map((tool) => (
+        <aside className="tool-drawer" aria-label="Supporting context">
+          <div className="tab-list" role="tablist" aria-label="Thread sections">
+            {threadSections.map((section) => (
               <button
                 type="button"
                 role="tab"
-                aria-selected={activeTool === tool.id}
-                className={activeTool === tool.id ? 'tab-button active' : 'tab-button'}
-                key={tool.id}
-                onClick={() => setActiveTool(tool.id)}
+                aria-selected={activeSection === section.id}
+                className={activeSection === section.id ? 'tab-button active' : 'tab-button'}
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
               >
-                {tool.label}
+                {section.label}
               </button>
             ))}
           </div>
-          <div className="tool-panel" role="tabpanel" aria-label={studentTools.find((tool) => tool.id === activeTool)?.label}>
-            {renderActiveTool()}
+          <div
+            className="tool-panel"
+            role="tabpanel"
+            aria-label={threadSections.find((section) => section.id === activeSection)?.label}
+          >
+            {renderActiveSection()}
           </div>
         </aside>
       </div>
