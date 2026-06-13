@@ -40,21 +40,29 @@ export default function App() {
         </div>
       </section>
 
-      <div className="dashboard-grid">
-        <AgentPanel />
-        <LifeAuditPanel />
-        <ActionQueue actions={actions} completedActions={completedActions} onComplete={completeAction} />
-        <MemoryProfile profile={seedStudent} />
-        <RoutineOperator />
-        <ModuleDeck
-          activeModules={activeModules}
-          recommendedModules={recommendedModules}
-          activatedModuleIds={activatedModuleIds}
-          onActivate={activateModule}
-        />
-        <DataVault profile={seedStudent} />
-        <AnalyticsPanel summary={weeklySummary} />
-        <SafetyPanel profile={seedStudent} />
+      <div className="workspace">
+        <section className="top-row" aria-label="Student context">
+          <AgentPanel />
+          <LifeAuditPanel />
+        </section>
+
+        <section className="attention-row" aria-label="What needs attention">
+          <ActionQueue actions={actions} completedActions={completedActions} onComplete={completeAction} />
+          <MemoryProfile profile={seedStudent} />
+        </section>
+
+        <section className="operations-grid" aria-label="Agent operations">
+          <RoutineOperator />
+          <ModuleDeck
+            activeModules={activeModules}
+            recommendedModules={recommendedModules}
+            activatedModuleIds={activatedModuleIds}
+            onActivate={activateModule}
+          />
+          <DataVault profile={seedStudent} />
+          <AnalyticsPanel summary={weeklySummary} />
+          <SafetyPanel profile={seedStudent} />
+        </section>
       </div>
     </main>
   );

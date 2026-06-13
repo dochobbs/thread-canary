@@ -22,7 +22,9 @@ button {
 }
 
 .app-shell {
+  width: min(100%, 1480px);
   min-height: 100vh;
+  margin: 0 auto;
   padding: 18px;
   background:
     linear-gradient(135deg, rgba(23, 32, 27, 0.06), transparent 34%),
@@ -31,9 +33,8 @@ button {
 
 .hero {
   display: grid;
-  min-height: 28vh;
   align-items: end;
-  padding: 28px 4px 24px;
+  padding: 48px 4px 28px;
 }
 
 .hero h1 {
@@ -52,7 +53,14 @@ button {
   line-height: 1.5;
 }
 
-.dashboard-grid {
+.workspace {
+  display: grid;
+  gap: 14px;
+}
+
+.top-row,
+.attention-row,
+.operations-grid {
   display: grid;
   gap: 14px;
   grid-template-columns: 1fr;
@@ -272,29 +280,34 @@ p {
     padding: 28px;
   }
 
-  .dashboard-grid {
+  .top-row,
+  .attention-row,
+  .operations-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .agent-panel,
   .action-queue {
     grid-column: span 2;
   }
 }
 
 @media (min-width: 1120px) {
-  .dashboard-grid {
-    grid-template-columns: 1.15fr 1fr 1fr;
+  .top-row {
+    grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
     align-items: start;
   }
 
-  .agent-panel {
-    grid-column: span 1;
-    position: sticky;
-    top: 24px;
+  .attention-row {
+    grid-template-columns: minmax(0, 2fr) minmax(360px, 1fr);
+    align-items: start;
+  }
+
+  .operations-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
   }
 
   .action-queue {
-    grid-column: span 2;
+    grid-column: auto;
   }
 }
