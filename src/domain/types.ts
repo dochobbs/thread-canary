@@ -17,6 +17,7 @@ export interface DeepModule {
   promise: string;
   watches: string[];
   actions: string[];
+  activated?: boolean;
 }
 
 export interface StudentProfile {
@@ -44,6 +45,7 @@ export interface AgentAction {
   priority: Priority;
   moduleId: string;
   eta: string;
+  completed?: boolean;
 }
 
 export interface WeeklySummary {

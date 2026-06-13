@@ -21,6 +21,28 @@ button {
   font: inherit;
 }
 
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid rgba(23, 32, 27, 0.16);
+  border-radius: 8px;
+  background: #fffdf7;
+  color: #17201b;
+  font: inherit;
+}
+
+input,
+select {
+  min-height: 42px;
+  padding: 0 11px;
+}
+
+textarea {
+  resize: vertical;
+  padding: 11px;
+}
+
 .app-shell {
   width: min(100%, 1160px);
   min-height: 100vh;
@@ -246,6 +268,33 @@ p {
   cursor: pointer;
 }
 
+.inline-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.inline-form label {
+  color: #7b6955;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.inline-form button {
+  min-height: 42px;
+  border-radius: 8px;
+  background: #17201b;
+  color: #fff7e8;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.inline-form button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
 .action-card button {
   width: 40px;
 }
@@ -320,6 +369,15 @@ p {
 
   .focus-layout {
     grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  }
+
+  .two-field-form {
+    grid-template-columns: 1fr 0.72fr;
+  }
+
+  .two-field-form label,
+  .two-field-form button {
+    grid-column: 1 / -1;
   }
 }
 

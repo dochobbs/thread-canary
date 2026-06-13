@@ -18,6 +18,8 @@ describe('canary store', () => {
     const state = await store.getCanaryState();
 
     expect(state.profile.name).toBe('Maya');
+    expect(state.profile.activeModuleIds).toContain('care-navigation');
+    expect(state.profile.availableModuleIds).toContain('nutrition-patterns');
     expect(state.actions.map((action) => action.id)).toContain('care-red-flag');
     expect(state.activeModules.map((module) => module.id)).toContain('care-navigation');
     expect(state.recommendedModules.map((module) => module.id)).toContain('nutrition-patterns');

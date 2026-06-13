@@ -1,16 +1,131 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import type { CanaryState } from './api/client';
+import { createActionQueue, recommendModules, summarizeWeek } from './domain/agent';
+import { modules } from './domain/modules';
+import { seedStudent } from './domain/seedData';
+
+let mockState: CanaryState;
+
+function createMockState(): CanaryState {
+  return {
+    profile: structuredClone(seedStudent),
+    actions: createActionQueue(seedStudent).map((action) => ({ ...action, completed: false })),
+    completedActionIds: [],
+    activatedModuleIds: [],
+    activeModules: modules.filter((module) => seedStudent.activeModuleIds.includes(module.id)),
+    recommendedModules: recommendModules(seedStudent).map((module) => ({ ...module, activated: false })),
+    weeklySummary: summarizeWeek(seedStudent),
+    events: [],
+  };
+}
+
+function jsonResponse(payload: unknown, status = 200) {
+  return Promise.resolve(
+    new Response(JSON.stringify(payload), {
+      status,
+      headers: { 'content-type': 'application/json' },
+    }),
+  );
+}
+
+function readPath(input: RequestInfo | URL) {
+  const raw = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+  return raw.startsWith('http') ? new URL(raw).pathname : raw;
+}
+
+function readBody(init?: RequestInit) {
+  return init?.body ? JSON.parse(String(init.body)) : {};
+}
+
+beforeEach(() => {
+  mockState = createMockState();
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const path = readPath(input);
+
+      if (path === '/api/canary-state') {
+        return jsonResponse(mockState);
+      }
+
+      if (path === '/api/actions/care-red-flag/complete' && init?.method === 'POST') {
+        mockState = {
+          ...mockState,
+          completedActionIds: ['care-red-flag'],
+          actions: mockState.actions.map((action) =>
+            action.id === 'care-red-flag' ? { ...action, completed: true } : action,
+          ),
+        };
+        return jsonResponse(mockState);
+      }
+
+      if (path === '/api/modules/nutrition-patterns/activate' && init?.method === 'POST') {
+        mockState = {
+          ...mockState,
+          activatedModuleIds: ['nutrition-patterns'],
+          activeModules: [
+            ...mockState.activeModules,
+            modules.find((module) => module.id === 'nutrition-patterns')!,
+          ],
+          recommendedModules: mockState.recommendedModules.map((module) =>
+            module.id === 'nutrition-patterns' ? { ...module, activated: true } : module,
+          ),
+        };
+        return jsonResponse(mockState);
+      }
+
+      if (path === '/api/memory' && init?.method === 'POST') {
+        const body = readBody(init);
+        mockState = {
+          ...mockState,
+          profile: {
+            ...mockState.profile,
+            memory: [...mockState.profile.memory, body.text],
+          },
+        };
+        return jsonResponse(mockState);
+      }
+
+      if (path === '/api/documents' && init?.method === 'POST') {
+        const body = readBody(init);
+        mockState = {
+          ...mockState,
+          profile: {
+            ...mockState.profile,
+            documents: [
+              ...mockState.profile.documents,
+              {
+                id: 'doc-test',
+                title: body.title,
+                kind: body.kind,
+                status: body.status,
+              },
+            ],
+          },
+        };
+        return jsonResponse(mockState);
+      }
+
+      return jsonResponse({ error: 'Not found' }, 404);
+    }),
+  );
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('College Life OS app shell', () => {
-  it('renders a focused default view without exposing every secondary surface', () => {
+  it('renders a focused default view without exposing every secondary surface', async () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { name: /college life os/i })).toBeInTheDocument();
     expect(screen.getByText(/private agent for college life/i)).toBeInTheDocument();
     expect(screen.getByText(/tell it your life once/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /action queue/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /routine operator/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /weekly readout/i })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /deep modules/i })).not.toBeInTheDocument();
@@ -21,6 +136,7 @@ describe('College Life OS app shell', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
     expect(screen.getByRole('tablist', { name: /student tools/i })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /private memory/i })).not.toBeInTheDocument();
 
@@ -34,6 +150,7 @@ describe('College Life OS app shell', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: /modules/i }));
 
     expect(screen.getByText(/nutrition \/ eating patterns/i)).toBeInTheDocument();
@@ -48,8 +165,47 @@ describe('College Life OS app shell', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /mark decide care level for symptoms done/i }));
+    await user.click(await screen.findByRole('button', { name: /mark decide care level for symptoms done/i }));
 
     expect(screen.getByText(/completed: decide care level for symptoms/i)).toBeInTheDocument();
+  });
+
+  it('saves student memory through the canary API', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: /memory/i }));
+    await user.type(screen.getByLabelText(/add memory/i), 'Needs quiet breakfast before chemistry lab.');
+    await user.click(screen.getByRole('button', { name: /save memory/i }));
+
+    expect(await screen.findByText(/needs quiet breakfast before chemistry lab/i)).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/memory',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ text: 'Needs quiet breakfast before chemistry lab.' }),
+      }),
+    );
+  });
+
+  it('saves student-mediated records through the canary API', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: /records/i }));
+    await user.type(screen.getByLabelText(/add record/i), 'Campus clinic receipt');
+    await user.selectOptions(screen.getByLabelText(/record type/i), 'Receipt');
+    await user.click(screen.getByRole('button', { name: /add record/i }));
+
+    expect(await screen.findByText(/campus clinic receipt/i)).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/documents',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ title: 'Campus clinic receipt', kind: 'Receipt', status: 'Captured' }),
+      }),
+    );
   });
 });

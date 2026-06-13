@@ -1,4 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import {
+  activateCanaryModule,
+  addCanaryDocument,
+  addCanaryMemory,
+  completeCanaryAction,
+  getCanaryState,
+  type CanaryState,
+  type DocumentInput,
+} from './api/client';
 import { AgentPanel } from './components/AgentPanel';
 import { ActionQueue } from './components/ActionQueue';
 import { AnalyticsPanel } from './components/AnalyticsPanel';
@@ -8,9 +17,6 @@ import { MemoryProfile } from './components/MemoryProfile';
 import { ModuleDeck } from './components/ModuleDeck';
 import { RoutineOperator } from './components/RoutineOperator';
 import { SafetyPanel } from './components/SafetyPanel';
-import { createActionQueue, recommendModules, summarizeWeek } from './domain/agent';
-import { modules } from './domain/modules';
-import { seedStudent } from './domain/seedData';
 import type { AgentAction, DeepModule } from './domain/types';
 
 type StudentTool = 'plan' | 'memory' | 'modules' | 'records' | 'safety';
@@ -24,51 +30,103 @@ const studentTools: Array<{ id: StudentTool; label: string }> = [
 ];
 
 export default function App() {
-  const [completedActions, setCompletedActions] = useState<string[]>([]);
-  const [activatedModuleIds, setActivatedModuleIds] = useState<string[]>([]);
+  const [canaryState, setCanaryState] = useState<CanaryState | null>(null);
   const [activeTool, setActiveTool] = useState<StudentTool>('plan');
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [isSavingMemory, setIsSavingMemory] = useState(false);
+  const [isSavingDocument, setIsSavingDocument] = useState(false);
 
-  const actions = useMemo(() => createActionQueue(seedStudent), []);
-  const recommendedModules = useMemo(() => recommendModules(seedStudent), []);
-  const weeklySummary = useMemo(() => summarizeWeek(seedStudent), []);
-  const activeModules = modules.filter((module) => seedStudent.activeModuleIds.includes(module.id));
+  useEffect(() => {
+    let isMounted = true;
 
-  function completeAction(action: AgentAction) {
-    setCompletedActions((current) => (current.includes(action.id) ? current : [...current, action.id]));
+    getCanaryState()
+      .then((state) => {
+        if (isMounted) {
+          setCanaryState(state);
+          setLoadError(null);
+        }
+      })
+      .catch((error: Error) => {
+        if (isMounted) {
+          setLoadError(error.message);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  async function completeAction(action: AgentAction) {
+    await applyStateMutation(() => completeCanaryAction(action.id));
   }
 
-  function activateModule(module: DeepModule) {
-    setActivatedModuleIds((current) => (current.includes(module.id) ? current : [...current, module.id]));
+  async function activateModule(module: DeepModule) {
+    await applyStateMutation(() => activateCanaryModule(module.id));
+  }
+
+  async function addMemory(text: string) {
+    setIsSavingMemory(true);
+    try {
+      await applyStateMutation(() => addCanaryMemory(text));
+    } finally {
+      setIsSavingMemory(false);
+    }
+  }
+
+  async function addDocument(document: DocumentInput) {
+    setIsSavingDocument(true);
+    try {
+      await applyStateMutation(() => addCanaryDocument(document));
+    } finally {
+      setIsSavingDocument(false);
+    }
+  }
+
+  async function applyStateMutation(mutation: () => Promise<CanaryState>) {
+    try {
+      setMutationError(null);
+      setCanaryState(await mutation());
+    } catch (error) {
+      setMutationError(error instanceof Error ? error.message : 'Canary update failed.');
+    }
   }
 
   function renderActiveTool() {
+    if (!canaryState) {
+      return null;
+    }
+
     switch (activeTool) {
       case 'memory':
         return (
           <>
             <LifeAuditPanel />
-            <MemoryProfile profile={seedStudent} />
+            <MemoryProfile profile={canaryState.profile} isSaving={isSavingMemory} onAddMemory={addMemory} />
           </>
         );
       case 'modules':
         return (
           <ModuleDeck
-            activeModules={activeModules}
-            recommendedModules={recommendedModules}
-            activatedModuleIds={activatedModuleIds}
+            activeModules={canaryState.activeModules}
+            recommendedModules={canaryState.recommendedModules}
+            activatedModuleIds={canaryState.activatedModuleIds}
             onActivate={activateModule}
           />
         );
       case 'records':
-        return <DataVault profile={seedStudent} />;
+        return (
+          <DataVault profile={canaryState.profile} isSaving={isSavingDocument} onAddDocument={addDocument} />
+        );
       case 'safety':
-        return <SafetyPanel profile={seedStudent} />;
+        return <SafetyPanel profile={canaryState.profile} />;
       case 'plan':
       default:
         return (
           <>
             <RoutineOperator />
-            <AnalyticsPanel summary={weeklySummary} />
+            <AnalyticsPanel summary={canaryState.weeklySummary} />
           </>
         );
     }
@@ -87,7 +145,29 @@ export default function App() {
       <div className="focus-layout">
         <section className="today-column" aria-label="Today">
           <AgentPanel />
-          <ActionQueue actions={actions} completedActions={completedActions} onComplete={completeAction} />
+          {loadError ? (
+            <section className="panel" role="alert">
+              <h2>Canary offline</h2>
+              <p>{loadError}</p>
+            </section>
+          ) : null}
+          {!loadError && !canaryState ? (
+            <section className="panel">
+              <h2>Loading agent</h2>
+            </section>
+          ) : null}
+          {canaryState ? (
+            <ActionQueue
+              actions={canaryState.actions}
+              completedActions={canaryState.completedActionIds}
+              onComplete={completeAction}
+            />
+          ) : null}
+          {mutationError ? (
+            <p className="mutation-error" role="alert">
+              {mutationError}
+            </p>
+          ) : null}
         </section>
 
         <aside className="tool-drawer" aria-label="Student tools">

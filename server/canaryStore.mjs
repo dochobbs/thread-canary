@@ -13,6 +13,14 @@ export const seedProfile = {
     'Wants trusted-contact help only after being asked first.',
   ],
   trustedContacts: ['Jordan - roommate', 'Aunt Lena - trusted adult'],
+  activeModuleIds: [
+    'executive-function',
+    'sleep-burnout-academic-load',
+    'medication-management',
+    'care-navigation',
+    'mental-health-safety',
+  ],
+  availableModuleIds: ['nutrition-patterns', 'substance-party-safety', 'admin-insurance'],
   signals: [
     {
       id: 'symptom-red-flag',
@@ -134,6 +142,25 @@ function createSeedState() {
   };
 }
 
+function normalizeState(state) {
+  return {
+    ...state,
+    profile: {
+      ...structuredClone(seedProfile),
+      ...state.profile,
+      activeModuleIds: state.profile?.activeModuleIds ?? seedProfile.activeModuleIds,
+      availableModuleIds: state.profile?.availableModuleIds ?? seedProfile.availableModuleIds,
+      memory: state.profile?.memory ?? seedProfile.memory,
+      trustedContacts: state.profile?.trustedContacts ?? seedProfile.trustedContacts,
+      signals: state.profile?.signals ?? seedProfile.signals,
+      documents: state.profile?.documents ?? seedProfile.documents,
+    },
+    completedActionIds: state.completedActionIds ?? [],
+    activatedModuleIds: state.activatedModuleIds ?? [],
+    events: state.events ?? [],
+  };
+}
+
 function createActionQueue(profile, completedActionIds) {
   const actions = [];
 
@@ -242,7 +269,7 @@ function buildCanaryState(state) {
 async function readState(filePath) {
   try {
     const raw = await readFile(filePath, 'utf8');
-    return JSON.parse(raw);
+    return normalizeState(JSON.parse(raw));
   } catch (error) {
     if (error.code === 'ENOENT') {
       return createSeedState();
