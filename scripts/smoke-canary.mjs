@@ -95,11 +95,11 @@ async function main() {
     body: JSON.stringify({ text: 'Draft a parent-safe update that calms worries.' }),
   });
   assert(
-    parentPayload.reply?.text?.includes('Here is the parent-safe version I would send'),
+    parentPayload.reply?.text?.includes('Send this:'),
     'Agent did not draft a parent-safe reassurance update.',
   );
   assert(
-    parentPayload.reply?.text?.includes('without sharing symptoms, medication details, or records'),
+    parentPayload.reply?.text?.includes('without handing over symptoms, medication details, or records'),
     'Parent-safe update did not preserve student privacy boundaries.',
   );
 
@@ -108,12 +108,25 @@ async function main() {
     body: JSON.stringify({ text: "I'm overwhelmed and my mom keeps asking if I'm okay." }),
   });
   assert(
-    overwhelmPayload.reply?.text?.includes("You don't have to sort the whole pile at once."),
+    overwhelmPayload.reply?.text?.includes('Yeah. This is getting loud.'),
     'Agent did not acknowledge vague student overwhelm.',
   );
   assert(
     (overwhelmPayload.reply?.text?.match(/\?/g) ?? []).length === 1,
     'Agent overwhelm reply should ask one focused question.',
+  );
+
+  const arbitraryPayload = await request('/api/agent/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text: 'What should I say to my lab TA if I miss lab?' }),
+  });
+  assert(
+    arbitraryPayload.reply?.text?.includes('I can help with that.'),
+    'Agent did not respond to an arbitrary student question.',
+  );
+  assert(
+    arbitraryPayload.reply?.text?.includes('draft'),
+    'Arbitrary-question fallback did not offer a concrete next artifact.',
   );
 
   console.log(`Canary smoke passed at ${baseUrl}`);

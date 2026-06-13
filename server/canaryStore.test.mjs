@@ -4,10 +4,10 @@ import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
 import { createCanaryStore } from './canaryStore.mjs';
 
-async function createTempStore() {
+async function createTempStore(options = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'college-os-canary-'));
   const filePath = join(dir, 'state.json');
-  const store = await createCanaryStore({ filePath });
+  const store = await createCanaryStore({ filePath, ...options });
   return { filePath, store };
 }
 
@@ -107,17 +107,54 @@ describe('canary store', () => {
     expect(persisted.agentMessages).toHaveLength(2);
   });
 
+  it('routes arbitrary questions through a general agent responder with student context', async () => {
+    let receivedRequest;
+    const { store } = await createTempStore({
+      agentResponder: async (request) => {
+        receivedRequest = request;
+        return 'Email Professor Lin: I may need to miss lab because I am making a care decision first.';
+      },
+    });
+
+    const result = await store.sendAgentMessage('What should I say to my professor if I miss lab?');
+
+    expect(result.reply.text).toContain('Email Professor Lin');
+    expect(receivedRequest.text).toBe('What should I say to my professor if I miss lab?');
+    expect(receivedRequest.context.profile.name).toBe('Alex Rivera');
+    expect(receivedRequest.context.openActions.map((action) => action.id)).toContain('care-red-flag');
+    expect(receivedRequest.context.recentMessages).toEqual([
+      expect.objectContaining({ role: 'student', text: 'What should I say to my professor if I miss lab?' }),
+    ]);
+  });
+
+  it('falls back to a private-operator answer when the general responder fails', async () => {
+    const { store } = await createTempStore({
+      agentResponder: async () => {
+        throw new Error('model unavailable');
+      },
+    });
+
+    const result = await store.sendAgentMessage('Can you help me write to my lab TA?');
+
+    expect(result.reply.text).toContain('I can help with that.');
+    expect(result.reply.text).toContain('draft');
+    expect(result.state.events).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: 'agent.responder_failed' })]),
+    );
+  });
+
   it('responds to vague overwhelm with connection, memory, and one focused question', async () => {
     const { store } = await createTempStore();
 
     const result = await store.sendAgentMessage("I'm overwhelmed and my mom keeps asking if I'm okay.");
     const reply = result.reply.text;
 
-    expect(reply).toContain("You don't have to sort the whole pile at once.");
-    expect(reply).toContain('I am seeing week 7 pressure');
-    expect(reply).toContain('student-owned');
-    expect(reply).toContain('Quick check:');
-    expect(reply).toContain('Do you want me to draft the parent-safe version, or keep this between us for now?');
+    expect(reply).toContain('Yeah. This is getting loud.');
+    expect(reply).toContain('Week 7');
+    expect(reply).toContain('I would keep the details private for now');
+    expect(reply).toContain('Want me to draft that, or handle the chest/fever decision first?');
+    expect(reply).not.toContain('student-owned');
+    expect(reply).not.toContain('THREAD');
     expect(reply.match(/\?/g)).toHaveLength(1);
   });
 
@@ -137,9 +174,10 @@ describe('canary store', () => {
 
     const result = await store.sendAgentMessage('Draft a parent update that calms worries.');
 
-    expect(result.reply.text).toContain('Here is the parent-safe version I would send');
-    expect(result.reply.text).toContain('student controls');
-    expect(result.reply.text).toContain('without sharing symptoms, medication details, or records');
+    expect(result.reply.text).toContain('Send this:');
+    expect(result.reply.text).toContain("Please don't call around.");
+    expect(result.reply.text).toContain('It calms them down without handing over symptoms, medication details, or records.');
+    expect(result.reply.text).not.toContain('THREAD');
   });
 
   it('turns a planning request into concrete next steps for the student', async () => {
@@ -147,11 +185,11 @@ describe('canary store', () => {
 
     const result = await store.sendAgentMessage('Plan tonight around symptoms, refill, sleep, and midterms.');
 
-    expect(result.reply.text).toContain('Tonight, I would not try to win the whole week.');
+    expect(result.reply.text).toContain('Tonight: run it in order.');
     expect(result.reply.text).toContain('care decision');
     expect(result.reply.text).toContain('refill');
     expect(result.reply.text).toContain('11:30 PM');
-    expect(result.reply.text).toContain('After that, I can turn this into reminders');
+    expect(result.reply.text).toContain('I can turn this into reminders');
   });
 
   it('keeps symptom guidance useful after the urgent action has already been completed', async () => {

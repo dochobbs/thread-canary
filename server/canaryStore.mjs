@@ -1,5 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { createThreadAgentResponder } from './threadAgent.mjs';
 
 export const seedProfile = {
   name: 'Alex Rivera',
@@ -514,6 +515,24 @@ function buildCanaryState(state) {
   };
 }
 
+function buildAgentResponderContext(state) {
+  const canaryState = buildCanaryState(state);
+  return {
+    profile: canaryState.profile,
+    openActions: canaryState.actions.filter((action) => !action.completed),
+    activeModules: canaryState.activeModules.map(({ id, name, promise, actions }) => ({ id, name, promise, actions })),
+    recommendedModules: canaryState.recommendedModules.map(({ id, name, promise, activated, recommended }) => ({
+      id,
+      name,
+      promise,
+      activated,
+      recommended,
+    })),
+    weeklySummary: canaryState.weeklySummary,
+    recentMessages: state.agentMessages.slice(-8),
+  };
+}
+
 function createAgentMessage(state, role, text) {
   return {
     id: `${Date.now()}-${state.agentMessages.length + 1}`,
@@ -570,30 +589,30 @@ function buildAgentReply(state, text) {
 
   if (wantsParentDraft) {
     return [
-      'Here is the parent-safe version I would send:',
-      '"I am in a rough week 7 stretch, but I am handling it. I have a plan for tonight, I know what I am doing next, and I will ask if I need help."',
-      'That gives them something solid without sharing symptoms, medication details, or records. The student controls what leaves THREAD.',
+      'Send this:',
+      '"I am okay enough to handle tonight. It is a heavy week, but I have a plan: care decision first, refill next, sleep by 11:30. I will tell you if I need help. Please don\'t call around."',
+      'It calms them down without handing over symptoms, medication details, or records.',
     ].join(' ');
   }
 
   if (soundsOverwhelmed) {
     return [
-      "You don't have to sort the whole pile at once.",
-      'I am seeing week 7 pressure: midterms starting in 5 days, sleep below 6.5 hours, a refill due before Friday, missed lab lunches, and parents checking in.',
-      'This stays student-owned unless you choose to share it.',
-      'Quick check: Do you want me to draft the parent-safe version, or keep this between us for now?',
+      'Yeah. This is getting loud.',
+      'Week 7 is doing the thing: midterms, low sleep, refill window, missed lab lunches, and parents checking in.',
+      'I would keep the details private for now and send one boring update so they stop guessing.',
+      'Want me to draft that, or handle the chest/fever decision first?',
     ].join(' ');
   }
 
   if (asksForPlan) {
     return [
-      'Tonight, I would not try to win the whole week.',
-      'Make it smaller: 1. care decision first, with emergency care if symptoms are severe, rapidly worse, or unsafe.',
-      '2. Send the refill note before the pharmacy window closes.',
-      '3. Eat a real recovery meal before the next study block.',
-      '4. Do one 45-minute bio practical block, then stop.',
-      '5. Protect 11:30 PM lights-out so tomorrow does not start in debt.',
-      'After that, I can turn this into reminders and a parent-safe update if you want one.',
+      'Tonight: run it in order.',
+      '1. Make the care decision first. If symptoms are severe, rapidly worse, or unsafe, use emergency care.',
+      '2. Send the refill note.',
+      '3. Eat before the next study block.',
+      '4. Do one 45-minute bio block.',
+      '5. Stop at 11:30 PM.',
+      'I can turn this into reminders.',
     ].join(' ');
   }
 
@@ -617,13 +636,13 @@ function buildAgentReply(state, text) {
 
   if (mentionsRefill) {
     return refillAction
-      ? `I can take the refill out of your head. THREAD already knows there are four days left before Friday and midterms are starting. Draft to send: "Hi, I have four days left before Friday and want to avoid a gap during midterms. Do you need anything from me to approve or send the refill?"`
+      ? `I can take the refill out of your head. You have four days left before Friday and midterms are starting. Draft to send: "Hi, I have four days left before Friday and want to avoid a gap during midterms. Do you need anything from me to approve or send the refill?"`
       : 'Your medication task is not currently the top open item, but I can still help prepare a refill note or med list.';
   }
 
   if (hasAnyWord(normalized, ['sleep', 'exam', 'exams', 'study', 'midterm', 'midterms'])) {
     return sleepAction
-      ? `I would protect tonight around recovery, not perfection: ${sleepAction.detail} If you want, I can make the smallest study plan that still gets you to bed.`
+      ? `Protect sleep tonight because tomorrow gets harder if you do not: ${sleepAction.detail} I can make the smallest study plan that still gets you to bed.`
       : 'I can help rebuild the week with class, meals, study blocks, and one protected sleep window.';
   }
 
@@ -644,9 +663,9 @@ function buildAgentReply(state, text) {
   }
 
   return [
-    'I am here, and I am not treating this like one random task.',
-    'I can see symptoms, refill timing, sleep debt, midterms, meals, records, and money pressure colliding.',
-    'Quick check: do you want me to help with the next 30 minutes, the parent text, or the care decision first?',
+    'I can help with that.',
+    'I have your week 7 context in view: symptoms, refill timing, sleep, classes, meals, records, and parent pressure.',
+    'Send me the target and I can draft it, make the decision checklist, or turn it into a reminder.',
   ].join(' ');
 }
 
@@ -680,6 +699,8 @@ function appendEvent(state, type, payload) {
 
 export async function createCanaryStore(options = {}) {
   const filePath = options.filePath ?? join(process.cwd(), '.data', 'canary-state.json');
+  const agentResponder =
+    options.agentResponder === undefined ? createThreadAgentResponder(options.agentResponderOptions) : options.agentResponder;
   let state = await readState(filePath);
   await writeState(filePath, state);
 
@@ -773,7 +794,21 @@ export async function createCanaryStore(options = {}) {
 
       const studentMessage = createAgentMessage(state, 'student', normalized);
       state.agentMessages.push(studentMessage);
-      const assistantMessage = createAgentMessage(state, 'assistant', buildAgentReply(state, normalized));
+
+      let replyText;
+      if (agentResponder) {
+        try {
+          const responderText = await agentResponder({
+            text: normalized,
+            context: buildAgentResponderContext(state),
+          });
+          replyText = String(responderText ?? '').trim();
+        } catch (error) {
+          appendEvent(state, 'agent.responder_failed', { message: error.message });
+        }
+      }
+
+      const assistantMessage = createAgentMessage(state, 'assistant', replyText || buildAgentReply(state, normalized));
       state.agentMessages.push(assistantMessage);
       appendEvent(state, 'agent.message', { studentMessageId: studentMessage.id, replyId: assistantMessage.id });
 

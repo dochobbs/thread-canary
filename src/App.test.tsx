@@ -125,7 +125,7 @@ beforeEach(() => {
       if (path === '/api/agent/messages' && init?.method === 'POST') {
         const body = readBody(init);
         const replyText = String(body.text).toLowerCase().includes('parent')
-          ? 'Here is the parent-safe version I would send: I am handling a busy midterm week and have a plan. THREAD keeps private details under student control without sharing symptoms, medication details, or records.'
+          ? "Send this: I am okay enough to handle tonight. It is a heavy week, but I have a plan. Please don't call around. It calms them down without handing over symptoms, medication details, or records."
           : 'Put the care level decision first. I can help you prepare the symptom history.';
         const studentMessage = {
           id: 'student-message-test',
@@ -236,8 +236,8 @@ describe('THREAD app shell', () => {
     expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /draft parent-safe update/i }));
 
-    expect(await screen.findByText(/here is the parent-safe version i would send/i)).toBeInTheDocument();
-    expect(screen.getByText(/without sharing symptoms, medication details, or records/i)).toBeInTheDocument();
+    expect(await screen.findByText(/send this/i)).toBeInTheDocument();
+    expect(screen.getByText(/without handing over symptoms, medication details, or records/i)).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith(
       '/api/agent/messages',
       expect.objectContaining({
