@@ -22,7 +22,7 @@ button {
 }
 
 .app-shell {
-  width: min(100%, 1480px);
+  width: min(100%, 1160px);
   min-height: 100vh;
   margin: 0 auto;
   padding: 18px;
@@ -34,7 +34,7 @@ button {
 .hero {
   display: grid;
   align-items: end;
-  padding: 48px 4px 28px;
+  padding: 48px 4px 34px;
 }
 
 .hero h1 {
@@ -53,16 +53,23 @@ button {
   line-height: 1.5;
 }
 
-.dashboard-columns {
+.focus-layout {
   display: grid;
-  gap: 14px;
+  gap: 18px;
   grid-template-columns: 1fr;
+  align-items: start;
 }
 
-.dashboard-column {
+.today-column,
+.tool-panel {
   display: flex;
   min-width: 0;
   flex-direction: column;
+  gap: 14px;
+}
+
+.tool-drawer {
+  display: grid;
   gap: 14px;
 }
 
@@ -73,6 +80,10 @@ button {
   background: rgba(255, 252, 244, 0.92);
   padding: 16px;
   box-shadow: 0 18px 50px rgba(23, 32, 27, 0.08);
+}
+
+.tool-drawer .panel {
+  box-shadow: 0 12px 32px rgba(23, 32, 27, 0.06);
 }
 
 .agent-panel {
@@ -143,6 +154,33 @@ p {
   align-items: center;
   margin-top: 14px;
   font-size: 0.88rem;
+}
+
+.tab-list {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  border: 1px solid rgba(23, 32, 27, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 252, 244, 0.82);
+  padding: 6px;
+}
+
+.tab-button {
+  min-height: 40px;
+  border-radius: 6px;
+  background: transparent;
+  color: #4a584f;
+  cursor: pointer;
+  padding: 0 12px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.tab-button.active {
+  background: #17201b;
+  color: #fff7e8;
 }
 
 .action-list,
@@ -280,23 +318,13 @@ p {
     padding: 28px;
   }
 
-  .dashboard-columns {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-  }
-
-  .primary-column {
-    grid-column: span 2;
+  .focus-layout {
+    grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
   }
 }
 
 @media (min-width: 1120px) {
-  .dashboard-columns {
-    grid-template-columns: minmax(420px, 1.35fr) minmax(340px, 0.9fr) minmax(360px, 0.95fr);
-    align-items: start;
-  }
-
-  .primary-column {
-    grid-column: auto;
+  .focus-layout {
+    grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
   }
 }

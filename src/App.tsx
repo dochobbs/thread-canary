@@ -13,9 +13,20 @@ import { modules } from './domain/modules';
 import { seedStudent } from './domain/seedData';
 import type { AgentAction, DeepModule } from './domain/types';
 
+type StudentTool = 'plan' | 'memory' | 'modules' | 'records' | 'safety';
+
+const studentTools: Array<{ id: StudentTool; label: string }> = [
+  { id: 'plan', label: 'Plan' },
+  { id: 'memory', label: 'Memory' },
+  { id: 'modules', label: 'Modules' },
+  { id: 'records', label: 'Records' },
+  { id: 'safety', label: 'Safety' },
+];
+
 export default function App() {
   const [completedActions, setCompletedActions] = useState<string[]>([]);
   const [activatedModuleIds, setActivatedModuleIds] = useState<string[]>([]);
+  const [activeTool, setActiveTool] = useState<StudentTool>('plan');
 
   const actions = useMemo(() => createActionQueue(seedStudent), []);
   const recommendedModules = useMemo(() => recommendModules(seedStudent), []);
@@ -30,6 +41,39 @@ export default function App() {
     setActivatedModuleIds((current) => (current.includes(module.id) ? current : [...current, module.id]));
   }
 
+  function renderActiveTool() {
+    switch (activeTool) {
+      case 'memory':
+        return (
+          <>
+            <LifeAuditPanel />
+            <MemoryProfile profile={seedStudent} />
+          </>
+        );
+      case 'modules':
+        return (
+          <ModuleDeck
+            activeModules={activeModules}
+            recommendedModules={recommendedModules}
+            activatedModuleIds={activatedModuleIds}
+            onActivate={activateModule}
+          />
+        );
+      case 'records':
+        return <DataVault profile={seedStudent} />;
+      case 'safety':
+        return <SafetyPanel profile={seedStudent} />;
+      case 'plan':
+      default:
+        return (
+          <>
+            <RoutineOperator />
+            <AnalyticsPanel summary={weeklySummary} />
+          </>
+        );
+    }
+  }
+
   return (
     <main className="app-shell">
       <section className="hero">
@@ -40,29 +84,31 @@ export default function App() {
         </div>
       </section>
 
-      <div className="dashboard-columns">
-        <section className="dashboard-column primary-column" aria-label="Primary agent workspace">
+      <div className="focus-layout">
+        <section className="today-column" aria-label="Today">
           <AgentPanel />
           <ActionQueue actions={actions} completedActions={completedActions} onComplete={completeAction} />
-          <RoutineOperator />
-          <AnalyticsPanel summary={weeklySummary} />
         </section>
 
-        <section className="dashboard-column context-column" aria-label="Student context">
-          <LifeAuditPanel />
-          <MemoryProfile profile={seedStudent} />
-          <DataVault profile={seedStudent} />
-        </section>
-
-        <section className="dashboard-column modules-column" aria-label="Modules and records">
-          <ModuleDeck
-            activeModules={activeModules}
-            recommendedModules={recommendedModules}
-            activatedModuleIds={activatedModuleIds}
-            onActivate={activateModule}
-          />
-          <SafetyPanel profile={seedStudent} />
-        </section>
+        <aside className="tool-drawer" aria-label="Student tools">
+          <div className="tab-list" role="tablist" aria-label="Student tools">
+            {studentTools.map((tool) => (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTool === tool.id}
+                className={activeTool === tool.id ? 'tab-button active' : 'tab-button'}
+                key={tool.id}
+                onClick={() => setActiveTool(tool.id)}
+              >
+                {tool.label}
+              </button>
+            ))}
+          </div>
+          <div className="tool-panel" role="tabpanel" aria-label={studentTools.find((tool) => tool.id === activeTool)?.label}>
+            {renderActiveTool()}
+          </div>
+        </aside>
       </div>
     </main>
   );
