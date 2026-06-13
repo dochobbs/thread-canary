@@ -1,15 +1,300 @@
 :root {
   color: #17201b;
-  background: #f6f3ea;
+  background: #f4f1e8;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  min-width: 320px;
 }
 
-main {
+button {
+  border: 0;
+  font: inherit;
+}
+
+.app-shell {
   min-height: 100vh;
-  padding: 24px;
+  padding: 18px;
+  background:
+    linear-gradient(135deg, rgba(23, 32, 27, 0.06), transparent 34%),
+    #f4f1e8;
+}
+
+.hero {
+  display: grid;
+  min-height: 28vh;
+  align-items: end;
+  padding: 28px 4px 24px;
+}
+
+.hero h1 {
+  max-width: 760px;
+  margin: 8px 0 12px;
+  font-size: clamp(3rem, 11vw, 6.4rem);
+  line-height: 0.9;
+  letter-spacing: 0;
+}
+
+.hero p:last-child {
+  max-width: 620px;
+  margin: 0;
+  color: #42524a;
+  font-size: 1.08rem;
+  line-height: 1.5;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr;
+}
+
+.panel,
+.agent-panel {
+  border: 1px solid rgba(23, 32, 27, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 252, 244, 0.92);
+  padding: 16px;
+  box-shadow: 0 18px 50px rgba(23, 32, 27, 0.08);
+}
+
+.agent-panel {
+  background: #17201b;
+  color: #f8f2e4;
+}
+
+.section-heading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.section-heading svg {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.eyebrow,
+.priority,
+.module-state {
+  margin: 0;
+  color: #7b6955;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.agent-panel .eyebrow,
+.agent-panel .trust-strip {
+  color: #cbbf9c;
+}
+
+h2,
+h3 {
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.1rem;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+p {
+  line-height: 1.45;
+}
+
+.agent-message {
+  padding: 14px;
+  border: 1px solid rgba(248, 242, 228, 0.18);
+  border-radius: 8px;
+  background: rgba(248, 242, 228, 0.08);
+}
+
+.agent-message p {
+  margin: 0;
+}
+
+.trust-strip {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+  font-size: 0.88rem;
+}
+
+.action-list,
+.audit-list,
+.module-grid,
+.routine-list,
+.vault-list {
+  display: grid;
+  gap: 10px;
+}
+
+.action-card,
+.audit-list article,
+.module-card,
+.routine-list article,
+.vault-list article {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(23, 32, 27, 0.12);
+  border-radius: 8px;
+  background: #fffaf0;
+  padding: 12px;
+}
+
+.action-card {
+  grid-template-columns: 1fr 42px;
+  align-items: start;
+}
+
+.action-card.urgent {
+  border-left: 5px solid #c83b36;
+}
+
+.action-card.high {
+  border-left: 5px solid #c97b22;
+}
+
+.action-card.medium {
+  border-left: 5px solid #386fa4;
+}
+
+.action-card p,
+.module-card p,
+.vault-list p,
+.privacy-note,
+.profile-line,
+.next-action,
+.summary-headline {
+  margin: 6px 0 0;
+  color: #4a584f;
+}
+
+.action-card button,
+.module-card button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 8px;
+  background: #17201b;
+  color: #fff7e8;
+  cursor: pointer;
+}
+
+.action-card button {
+  width: 40px;
+}
+
+.action-card button:disabled,
+.module-card button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.action-card svg,
+.module-card svg {
+  width: 18px;
+  height: 18px;
+}
+
+.completion-note {
+  margin-bottom: 0;
+  color: #25563d;
+  font-weight: 700;
+}
+
+.memory-list,
+.signal-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  padding-left: 18px;
+}
+
+.module-card.active {
+  background: #eff5ee;
+}
+
+.module-card.available {
+  background: #fdf7ec;
+}
+
+.audit-list article span,
+.vault-list article span {
+  color: #7b6955;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.routine-list article p {
+  margin: 0;
+  color: #4a584f;
+}
+
+.contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.contact-row span {
+  border-radius: 999px;
+  background: #e8efe6;
+  padding: 8px 10px;
+  color: #28392f;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+@media (min-width: 760px) {
+  .app-shell {
+    padding: 28px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agent-panel,
+  .action-queue {
+    grid-column: span 2;
+  }
+}
+
+@media (min-width: 1120px) {
+  .dashboard-grid {
+    grid-template-columns: 1.15fr 1fr 1fr;
+    align-items: start;
+  }
+
+  .agent-panel {
+    grid-column: span 1;
+    position: sticky;
+    top: 24px;
+  }
+
+  .action-queue {
+    grid-column: span 2;
+  }
 }
