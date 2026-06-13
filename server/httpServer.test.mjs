@@ -50,7 +50,8 @@ describe('canary HTTP server', () => {
       expect(healthResponse.status).toBe(200);
       expect(health).toEqual({ ok: true, service: 'thread-canary' });
       expect(stateResponse.status).toBe(200);
-      expect(state.profile.name).toBe('Maya');
+      expect(state.profile.name).toBe('Alex Rivera');
+      expect(state.profile.schoolContext).toContain('Week 7');
       expect(state.actions.map((action) => action.id)).toContain('care-red-flag');
     } finally {
       await closeServer(server);
@@ -73,6 +74,7 @@ describe('canary HTTP server', () => {
       });
       expect(activatedResponse.status).toBe(200);
       expect(activatedState.activatedModuleIds).toContain('nutrition-patterns');
+      expect(activatedState.actions.map((action) => action.id)).toContain('nutrition-lab-day-fallback');
       expect(activatedState.recommendedModules.find((module) => module.id === 'nutrition-patterns')).toMatchObject({
         activated: true,
       });

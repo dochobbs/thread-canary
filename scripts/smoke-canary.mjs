@@ -32,7 +32,15 @@ async function main() {
   assert(typeof html === 'string' && html.includes('id="root"'), 'Root route did not serve the built app shell.');
 
   const state = await request('/api/canary-state');
-  assert(state.profile?.name === 'Maya', 'Canary state did not include the demo student profile.');
+  assert(state.profile?.name === 'Alex Rivera', 'Canary state did not include the week-7 demo student profile.');
+  assert(
+    state.profile?.schoolContext?.includes('Week 7'),
+    'Canary state did not include the halfway-through-first-semester context.',
+  );
+  assert(
+    state.profile?.availableModuleIds?.length === 10,
+    'Canary state did not include the full on-demand module library.',
+  );
   assert(Array.isArray(state.actions) && state.actions.length > 0, 'Canary state did not include agent actions.');
 
   const completedState = await request('/api/actions/care-red-flag/complete', { method: 'POST' });
@@ -45,6 +53,10 @@ async function main() {
   assert(
     moduleState.activatedModuleIds.includes('nutrition-patterns'),
     'Module activation did not persist through the API.',
+  );
+  assert(
+    moduleState.actions.some((action) => action.id === 'nutrition-lab-day-fallback'),
+    'Activated nutrition module did not add module-specific agent work.',
   );
 
   const memoryText = 'Canary smoke: remembers a quiet breakfast before chemistry lab.';
@@ -76,6 +88,19 @@ async function main() {
   assert(
     agentPayload.state?.agentMessages?.some((message) => message.role === 'assistant'),
     'Agent conversation did not persist through the API.',
+  );
+
+  const parentPayload = await request('/api/agent/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text: 'Draft a parent-safe update that calms worries.' }),
+  });
+  assert(
+    parentPayload.reply?.text?.includes('Parent-safe update'),
+    'Agent did not draft a parent-safe reassurance update.',
+  );
+  assert(
+    parentPayload.reply?.text?.includes('without sharing symptoms, medication details, or records'),
+    'Parent-safe update did not preserve student privacy boundaries.',
   );
 
   console.log(`Canary smoke passed at ${baseUrl}`);

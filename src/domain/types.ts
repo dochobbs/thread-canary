@@ -18,6 +18,7 @@ export interface DeepModule {
   watches: string[];
   actions: string[];
   activated?: boolean;
+  recommended?: boolean;
 }
 
 export interface StudentProfile {

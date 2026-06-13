@@ -17,7 +17,7 @@ function availableLabel(module: DeepModule, added: boolean) {
     return `${module.name} added`;
   }
 
-  return module.id === 'nutrition-patterns' ? 'Available when useful' : 'Available on demand';
+  return module.recommended ? 'Recommended now' : 'Available on demand';
 }
 
 function buttonLabel(module: DeepModule) {

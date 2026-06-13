@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Send } from 'lucide-react';
+import { CalendarCheck, ClipboardList, Pill, Send, ShieldCheck, type LucideIcon } from 'lucide-react';
 import type { AgentMessage } from '../api/client';
 
 interface AgentPanelProps {
@@ -10,12 +10,39 @@ interface AgentPanelProps {
 }
 
 const defaultInsights = [
-  'Sleep has been below 6.5h',
+  'Sleep has been below 6.5h for 3 nights',
   'Medication refill due Friday',
-  'Insurance form still waiting',
+  'Bio practical and chem midterm stack this week',
 ];
 
-export function AgentPanel({ studentName = 'Maya', messages = [], isSending = false, onSendMessage }: AgentPanelProps) {
+const agentTools: Array<{ label: string; ariaLabel: string; prompt: string; Icon: LucideIcon }> = [
+  {
+    label: 'Plan tonight',
+    ariaLabel: 'Plan tonight',
+    prompt: 'Plan tonight around symptoms, refill, sleep, and midterms.',
+    Icon: CalendarCheck,
+  },
+  {
+    label: 'Prep visit',
+    ariaLabel: 'Prep care visit',
+    prompt: 'Prep a care visit with a symptom history and what to ask.',
+    Icon: ClipboardList,
+  },
+  {
+    label: 'Start refill',
+    ariaLabel: 'Start medication refill',
+    prompt: 'Start the medication refill and draft what I should send.',
+    Icon: Pill,
+  },
+  {
+    label: 'Parent update',
+    ariaLabel: 'Draft parent-safe update',
+    prompt: 'Draft a parent-safe update that reassures without sharing private details.',
+    Icon: ShieldCheck,
+  },
+];
+
+export function AgentPanel({ studentName = 'Alex Rivera', messages = [], isSending = false, onSendMessage }: AgentPanelProps) {
   const [draft, setDraft] = useState('');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -27,6 +54,14 @@ export function AgentPanel({ studentName = 'Maya', messages = [], isSending = fa
 
     await onSendMessage(text);
     setDraft('');
+  }
+
+  async function runTool(prompt: string) {
+    if (!onSendMessage || isSending) {
+      return;
+    }
+
+    await onSendMessage(prompt);
   }
 
   return (
@@ -57,6 +92,20 @@ export function AgentPanel({ studentName = 'Maya', messages = [], isSending = fa
             </article>
           ))
         )}
+      </div>
+      <div className="agent-tools" aria-label="Agent tools">
+        {agentTools.map(({ label, ariaLabel, prompt, Icon }) => (
+          <button
+            type="button"
+            key={label}
+            aria-label={ariaLabel}
+            onClick={() => runTool(prompt)}
+            disabled={!onSendMessage || isSending}
+          >
+            <Icon aria-hidden="true" />
+            <span>{label}</span>
+          </button>
+        ))}
       </div>
       <form className="agent-compose" onSubmit={handleSubmit}>
         <label htmlFor="agent-message">Message agent</label>

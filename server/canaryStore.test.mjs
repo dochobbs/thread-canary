@@ -17,12 +17,16 @@ describe('canary store', () => {
 
     const state = await store.getCanaryState();
 
-    expect(state.profile.name).toBe('Maya');
+    expect(state.profile.name).toBe('Alex Rivera');
+    expect(state.profile.schoolContext).toContain('Week 7');
     expect(state.profile.activeModuleIds).toContain('care-navigation');
+    expect(state.profile.availableModuleIds).toHaveLength(10);
     expect(state.profile.availableModuleIds).toContain('nutrition-patterns');
+    expect(state.profile.availableModuleIds).toContain('financial-stress');
     expect(state.actions.map((action) => action.id)).toContain('care-red-flag');
     expect(state.activeModules.map((module) => module.id)).toContain('care-navigation');
     expect(state.recommendedModules.map((module) => module.id)).toContain('nutrition-patterns');
+    expect(state.recommendedModules.map((module) => module.id)).toContain('sexual-health-privacy');
   });
 
   it('persists completed actions', async () => {
@@ -43,10 +47,26 @@ describe('canary store', () => {
     const persisted = JSON.parse(await readFile(filePath, 'utf8'));
 
     expect(state.activatedModuleIds).toContain('nutrition-patterns');
+    expect(state.activeModules.map((module) => module.id)).toContain('nutrition-patterns');
+    expect(state.actions.map((action) => action.id)).toContain('nutrition-lab-day-fallback');
     expect(state.recommendedModules.find((module) => module.id === 'nutrition-patterns')).toMatchObject({
       activated: true,
+      recommended: true,
     });
     expect(persisted.activatedModuleIds).toContain('nutrition-patterns');
+  });
+
+  it('keeps on-demand module actions out of the queue until the module is active', async () => {
+    const { store } = await createTempStore();
+
+    const before = await store.getCanaryState();
+    const after = await store.activateModule('financial-stress');
+
+    expect(before.actions.map((action) => action.id)).not.toContain('financial-stress-plan');
+    expect(after.actions.find((action) => action.id === 'financial-stress-plan')).toMatchObject({
+      title: 'Sort bill and food-budget pressure',
+      moduleId: 'financial-stress',
+    });
   });
 
   it('persists student memory additions', async () => {
@@ -85,6 +105,27 @@ describe('canary store', () => {
       expect.objectContaining({ role: 'assistant', text: expect.stringContaining('care level') }),
     ]);
     expect(persisted.agentMessages).toHaveLength(2);
+  });
+
+  it('drafts a parent-safe update without exposing private student details', async () => {
+    const { store } = await createTempStore();
+
+    const result = await store.sendAgentMessage('Draft a parent update that calms worries.');
+
+    expect(result.reply.text).toContain('Parent-safe update');
+    expect(result.reply.text).toContain('student controls');
+    expect(result.reply.text).toContain('without sharing symptoms, medication details, or records');
+  });
+
+  it('turns a planning request into concrete next steps for the student', async () => {
+    const { store } = await createTempStore();
+
+    const result = await store.sendAgentMessage('Plan tonight around symptoms, refill, sleep, and midterms.');
+
+    expect(result.reply.text).toContain('Tonight');
+    expect(result.reply.text).toContain('care decision');
+    expect(result.reply.text).toContain('refill');
+    expect(result.reply.text).toContain('11:30 PM');
   });
 
   it('keeps symptom guidance useful after the urgent action has already been completed', async () => {

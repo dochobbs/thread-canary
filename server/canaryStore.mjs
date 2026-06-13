@@ -2,17 +2,22 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 export const seedProfile = {
-  name: 'Maya',
-  year: 'First-year student',
-  schoolContext: 'Biology major with two lab sections, club soccer, and a heavy exam week coming up.',
+  name: 'Alex Rivera',
+  year: 'First-year student, halfway through first semester',
+  schoolContext:
+    'Week 7 at Northview State; biology major with two lab sections, club soccer, work-study, and midterms stacking up.',
   privacyMode: 'Student-owned. Parents can pay, but content stays private unless shared.',
   memory: [
-    'Usually takes stimulant medication at 8:00 AM on class days.',
-    'Gets behind when sleep drops under 6 hours for two nights.',
-    'Prefers urgent care over campus clinic after 6 PM.',
-    'Wants trusted-contact help only after being asked first.',
+    'Week 7 at Northview State; first time managing college health, money, food, and classes without a parent calendar.',
+    'Monday/Wednesday/Friday biology lecture at 9:10 AM; Tuesday/Thursday chemistry lab runs through lunch.',
+    'Usually takes stimulant medication at 8:00 AM on class days and needs refill started before Friday.',
+    'Gets behind when sleep drops under 6.5 hours for two nights, especially before lab practicals.',
+    'Prefers urgent care over campus clinic after 6 PM and wants a short symptom history ready before going.',
+    'Roommate Jordan can help with meals or rides; Aunt Lena is the trusted adult only after Alex says yes.',
+    'Parents can pay for THREAD, but student memory and records stay private unless Alex shares them.',
+    'Club soccer is important, but ankle soreness and late practices can wipe out recovery.',
   ],
-  trustedContacts: ['Jordan - roommate', 'Aunt Lena - trusted adult'],
+  trustedContacts: ['Jordan - roommate', 'Aunt Lena - trusted adult', 'Sam - resident assistant'],
   activeModuleIds: [
     'executive-function',
     'sleep-burnout-academic-load',
@@ -20,26 +25,70 @@ export const seedProfile = {
     'care-navigation',
     'mental-health-safety',
   ],
-  availableModuleIds: ['nutrition-patterns', 'substance-party-safety', 'admin-insurance'],
+  availableModuleIds: [
+    'nutrition-patterns',
+    'sexual-health-privacy',
+    'substance-party-safety',
+    'acute-illness-injury',
+    'admin-insurance',
+    'document-vault-records',
+    'chronic-condition-support',
+    'identity-sensitive-care',
+    'sports-fitness-recovery',
+    'financial-stress',
+  ],
   signals: [
     {
       id: 'symptom-red-flag',
       label: 'Chest tightness plus fever note',
-      value: 'worse since yesterday',
+      value: 'worse since yesterday after weekend cough',
       severity: 'urgent',
     },
-    { id: 'refill-window', label: 'Medication refill', value: '4 days left', severity: 'high' },
-    { id: 'sleep-debt', label: 'Sleep debt', value: '2 nights under 6 hours', severity: 'high' },
-    { id: 'exam-cluster', label: 'Exam cluster', value: 'starts in 5 days', severity: 'high' },
-    { id: 'missed-meals', label: 'Meal rhythm', value: 'skipped lunch 3 times', severity: 'medium' },
-    { id: 'party-risk', label: 'Weekend recovery', value: 'reported blackout last month', severity: 'medium' },
-    { id: 'insurance-card', label: 'Insurance card', value: 'not uploaded', severity: 'medium' },
-    { id: 'isolation', label: 'Check-in tone', value: 'less contact this week', severity: 'medium' },
+    {
+      id: 'refill-window',
+      label: 'Medication refill',
+      value: '4 days left; prescriber approval may be needed',
+      severity: 'high',
+    },
+    { id: 'sleep-debt', label: 'Sleep debt', value: '3 nights under 6.5 hours', severity: 'high' },
+    {
+      id: 'exam-cluster',
+      label: 'Midterm cluster',
+      value: 'bio practical, chem midterm, and writing draft in 5 days',
+      severity: 'high',
+    },
+    { id: 'missed-meals', label: 'Lab-day meals', value: 'skipped lunch 3 lab days', severity: 'medium' },
+    { id: 'party-risk', label: 'Weekend recovery', value: 'lost time at first tailgate last month', severity: 'medium' },
+    {
+      id: 'insurance-card',
+      label: 'Insurance basics',
+      value: 'front card uploaded; back and policy phone missing',
+      severity: 'medium',
+    },
+    {
+      id: 'record-sprawl',
+      label: 'Records split',
+      value: 'immunization PDF, receipts, and clinic note across photos/email',
+      severity: 'medium',
+    },
+    { id: 'isolation', label: 'Check-in tone', value: 'roommate says Alex has been quieter this week', severity: 'medium' },
+    { id: 'migraine-pattern', label: 'Stress headaches', value: 'two late-week migraines this month', severity: 'medium' },
+    {
+      id: 'identity-care-preference',
+      label: 'Care preference',
+      value: 'wants chosen name, pronouns, and privacy notes remembered',
+      severity: 'medium',
+    },
+    { id: 'sports-recovery', label: 'Club soccer load', value: 'ankle soreness after two practices', severity: 'low' },
+    { id: 'financial-stress', label: 'Money pressure', value: 'lab fee and dining shortfall due before payday', severity: 'medium' },
   ],
   documents: [
-    { id: 'insurance', title: 'Insurance card', kind: 'Card', status: 'Missing' },
+    { id: 'insurance', title: 'Insurance card', kind: 'Card', status: 'Front captured, back missing' },
     { id: 'rx', title: 'Stimulant prescription label', kind: 'Medication', status: 'Captured' },
-    { id: 'immunization', title: 'Immunization record', kind: 'Campus form', status: 'Needs review' },
+    { id: 'immunization', title: 'Immunization record', kind: 'Campus form', status: 'Cleared' },
+    { id: 'health-intake', title: 'Campus health intake form', kind: 'Campus form', status: 'Needs signature' },
+    { id: 'sports-clearance', title: 'Club sports clearance', kind: 'Campus form', status: 'Due before tournament' },
+    { id: 'lab-fee', title: 'Chemistry lab fee receipt', kind: 'Receipt', status: 'Needs review' },
   ],
 };
 
@@ -99,6 +148,15 @@ export const moduleRegistry = [
     actions: ['meal rhythm plan', 'dining hall fallback', 'care prompt'],
   },
   {
+    id: 'sexual-health-privacy',
+    name: 'Sexual Health / Privacy',
+    category: 'on-demand',
+    status: 'available',
+    promise: 'Adds private support for contraception, STI testing, consent questions, and clinic prep.',
+    watches: ['privacy concerns', 'testing windows', 'relationship stress'],
+    actions: ['private clinic plan', 'question list', 'records boundary'],
+  },
+  {
     id: 'substance-party-safety',
     name: 'Substance / Party Safety',
     category: 'on-demand',
@@ -108,6 +166,15 @@ export const moduleRegistry = [
     actions: ['safer night plan', 'recovery check', 'trusted-contact setup'],
   },
   {
+    id: 'acute-illness-injury',
+    name: 'Acute Illness / Injury',
+    category: 'on-demand',
+    status: 'available',
+    promise: 'Adds deeper support for symptoms, injuries, visit prep, and follow-up recovery.',
+    watches: ['symptom changes', 'sports injuries', 'missed class risk'],
+    actions: ['symptom timeline', 'care setting choice', 'after-visit plan'],
+  },
+  {
     id: 'admin-insurance',
     name: 'Admin / Insurance',
     category: 'on-demand',
@@ -115,6 +182,51 @@ export const moduleRegistry = [
     promise: 'Adds depth for forms, insurance cards, immunizations, bills, and confusing charges.',
     watches: ['missing forms', 'unread bills', 'insurance deadlines'],
     actions: ['form checklist', 'bill explainer', 'document request'],
+  },
+  {
+    id: 'document-vault-records',
+    name: 'Documents / Records',
+    category: 'on-demand',
+    status: 'available',
+    promise: 'Adds a student-mediated record layer for receipts, visit notes, forms, and IDs.',
+    watches: ['scattered records', 'missing signatures', 'photo uploads'],
+    actions: ['record cleanup', 'share packet', 'deadline reminder'],
+  },
+  {
+    id: 'chronic-condition-support',
+    name: 'Chronic Conditions',
+    category: 'on-demand',
+    status: 'available',
+    promise: 'Adds continuity for recurring symptoms, accommodations, specialist notes, and routines.',
+    watches: ['recurring symptoms', 'flare patterns', 'accommodation needs'],
+    actions: ['pattern log', 'visit prep', 'routine adjustment'],
+  },
+  {
+    id: 'identity-sensitive-care',
+    name: 'Identity-Sensitive Care',
+    category: 'on-demand',
+    status: 'available',
+    promise: 'Adds memory for names, pronouns, cultural context, access needs, and care preferences.',
+    watches: ['care preferences', 'identity safety', 'access barriers'],
+    actions: ['preference card', 'clinic script', 'trusted support rules'],
+  },
+  {
+    id: 'sports-fitness-recovery',
+    name: 'Sports / Fitness Recovery',
+    category: 'on-demand',
+    status: 'available',
+    promise: 'Adds support for practice load, injuries, recovery time, and return-to-play decisions.',
+    watches: ['soreness', 'training load', 'sleep recovery'],
+    actions: ['recovery plan', 'injury check', 'coach note'],
+  },
+  {
+    id: 'financial-stress',
+    name: 'Financial Stress',
+    category: 'on-demand',
+    status: 'available',
+    promise: 'Adds practical help for bills, food gaps, fees, insurance charges, and parent boundaries.',
+    watches: ['bills', 'food budget', 'work-study timing'],
+    actions: ['bill sort', 'campus resource plan', 'parent-safe update'],
   },
 ];
 
@@ -163,10 +275,12 @@ function normalizeState(state) {
   };
 }
 
-function createActionQueue(profile, completedActionIds) {
+function createActionQueue(profile, completedActionIds, activatedModuleIds = []) {
   const actions = [];
+  const activeDepth = new Set(activatedModuleIds);
+  const signalIds = new Set(profile.signals.map((signal) => signal.id));
 
-  if (profile.signals.some((signal) => signal.id === 'symptom-red-flag')) {
+  if (signalIds.has('symptom-red-flag')) {
     actions.push({
       id: 'care-red-flag',
       title: 'Decide care level for symptoms',
@@ -178,36 +292,143 @@ function createActionQueue(profile, completedActionIds) {
     });
   }
 
-  if (profile.signals.some((signal) => signal.id === 'refill-window')) {
+  if (signalIds.has('refill-window')) {
     actions.push({
       id: 'refill-stimulant',
       title: 'Start medication refill',
-      detail: 'Four days left. Queue pharmacy task and prepare a message if the refill needs clinician approval.',
+      detail:
+        'Four days left before Friday. Queue the pharmacy task and prepare a prescriber message in case approval is needed.',
       priority: 'high',
       moduleId: 'medication-management',
       eta: 'Today',
     });
   }
 
-  if (profile.signals.some((signal) => signal.id === 'sleep-debt' || signal.id === 'exam-cluster')) {
+  if (signalIds.has('sleep-debt') || signalIds.has('exam-cluster')) {
     actions.push({
       id: 'restart-academic-load',
-      title: 'Repair this week before exams hit',
+      title: 'Repair week 7 before midterms hit',
       detail:
-        'Sleep debt and exam clustering are both up. Build a two-day recovery schedule with class, meals, study blocks, and one protected sleep window.',
+        'Sleep debt and the bio/chem/writing midterm cluster are both up. Build a two-day recovery schedule with class, meals, study blocks, and one protected sleep window.',
       priority: 'high',
       moduleId: 'sleep-burnout-academic-load',
       eta: 'Tonight',
     });
   }
 
-  if (profile.signals.some((signal) => signal.id === 'isolation')) {
+  if (signalIds.has('isolation')) {
     actions.push({
       id: 'safety-check-in',
       title: 'Run a consent-based safety check-in',
       detail: 'The app can ask how you want support and draft a message to a trusted contact only if you choose.',
       priority: 'medium',
       moduleId: 'mental-health-safety',
+      eta: 'This week',
+    });
+  }
+
+  if (activeDepth.has('nutrition-patterns') && signalIds.has('missed-meals')) {
+    actions.push({
+      id: 'nutrition-lab-day-fallback',
+      title: 'Build lab-day meal fallback',
+      detail:
+        'Turn skipped Tuesday/Thursday lab lunches into a repeatable plan: dining hall backup, backpack food, and one post-lab recovery meal.',
+      priority: 'medium',
+      moduleId: 'nutrition-patterns',
+      eta: 'This week',
+    });
+  }
+
+  if (activeDepth.has('substance-party-safety') && signalIds.has('party-risk')) {
+    actions.push({
+      id: 'party-safety-plan',
+      title: 'Make a safer weekend plan',
+      detail:
+        'Set a private limit, recovery plan, and roommate check-in for the next tailgate without turning it into a lecture.',
+      priority: 'medium',
+      moduleId: 'substance-party-safety',
+      eta: 'Before weekend',
+    });
+  }
+
+  if (activeDepth.has('acute-illness-injury') && signalIds.has('symptom-red-flag')) {
+    actions.push({
+      id: 'acute-symptom-visit-prep',
+      title: 'Prepare symptom visit notes',
+      detail:
+        'Collect onset, fever timing, chest tightness changes, meds taken, and questions so Alex does not have to remember it while sick.',
+      priority: 'medium',
+      moduleId: 'acute-illness-injury',
+      eta: 'Now',
+    });
+  }
+
+  if (activeDepth.has('admin-insurance') && signalIds.has('insurance-card')) {
+    actions.push({
+      id: 'insurance-card-complete',
+      title: 'Complete insurance basics',
+      detail:
+        'Capture the back of the card, policy phone number, and campus billing instructions before the next visit creates paperwork.',
+      priority: 'medium',
+      moduleId: 'admin-insurance',
+      eta: 'This week',
+    });
+  }
+
+  if (activeDepth.has('document-vault-records') && signalIds.has('record-sprawl')) {
+    actions.push({
+      id: 'records-consolidate',
+      title: 'Consolidate scattered records',
+      detail: 'Pull the immunization PDF, receipts, clinic note, and sports form into one student-controlled packet.',
+      priority: 'medium',
+      moduleId: 'document-vault-records',
+      eta: 'This week',
+    });
+  }
+
+  if (activeDepth.has('chronic-condition-support') && signalIds.has('migraine-pattern')) {
+    actions.push({
+      id: 'migraine-pattern-review',
+      title: 'Track stress headache pattern',
+      detail:
+        'Connect late-week migraines with sleep, meals, stimulant timing, lab days, and screen load before the next visit.',
+      priority: 'medium',
+      moduleId: 'chronic-condition-support',
+      eta: 'This week',
+    });
+  }
+
+  if (activeDepth.has('identity-sensitive-care') && signalIds.has('identity-care-preference')) {
+    actions.push({
+      id: 'care-preference-card',
+      title: 'Save care preference card',
+      detail:
+        'Keep chosen name, pronouns, privacy boundaries, and access preferences ready for clinics without sharing them broadly.',
+      priority: 'medium',
+      moduleId: 'identity-sensitive-care',
+      eta: 'This week',
+    });
+  }
+
+  if (activeDepth.has('sports-fitness-recovery') && signalIds.has('sports-recovery')) {
+    actions.push({
+      id: 'ankle-recovery-check',
+      title: 'Check practice recovery load',
+      detail: 'Balance ankle soreness, club soccer, sleep debt, and midterms before the next practice.',
+      priority: 'low',
+      moduleId: 'sports-fitness-recovery',
+      eta: 'Before practice',
+    });
+  }
+
+  if (activeDepth.has('financial-stress') && signalIds.has('financial-stress')) {
+    actions.push({
+      id: 'financial-stress-plan',
+      title: 'Sort bill and food-budget pressure',
+      detail:
+        'Separate the lab fee, dining shortfall, work-study payday, and what can be shared with parents without exposing private records.',
+      priority: 'medium',
+      moduleId: 'financial-stress',
       eta: 'This week',
     });
   }
@@ -232,9 +453,33 @@ function recommendModules(profile, activatedModuleIds) {
     recommendedIds.add('admin-insurance');
   }
 
-  return Array.from(recommendedIds).map((id) => {
+  if (profile.signals.some((signal) => signal.id === 'symptom-red-flag')) {
+    recommendedIds.add('acute-illness-injury');
+  }
+
+  if (profile.signals.some((signal) => signal.id === 'record-sprawl')) {
+    recommendedIds.add('document-vault-records');
+  }
+
+  if (profile.signals.some((signal) => signal.id === 'migraine-pattern')) {
+    recommendedIds.add('chronic-condition-support');
+  }
+
+  if (profile.signals.some((signal) => signal.id === 'identity-care-preference')) {
+    recommendedIds.add('identity-sensitive-care');
+  }
+
+  if (profile.signals.some((signal) => signal.id === 'sports-recovery')) {
+    recommendedIds.add('sports-fitness-recovery');
+  }
+
+  if (profile.signals.some((signal) => signal.id === 'financial-stress')) {
+    recommendedIds.add('financial-stress');
+  }
+
+  return profile.availableModuleIds.map((id) => {
     const module = moduleRegistry.find((item) => item.id === id);
-    return { ...module, activated: activatedModuleIds.includes(id) };
+    return { ...module, activated: activatedModuleIds.includes(id), recommended: recommendedIds.has(id) };
   });
 }
 
@@ -248,9 +493,9 @@ function summarizeWeek(profile, completedActionIds) {
     signals: [
       labels.includes('sleep-debt') ? 'sleep debt is up' : 'sleep is stable',
       labels.includes('refill-window') ? 'medication refill is close' : 'medications look current',
-      labels.includes('exam-cluster') ? 'exam cluster starts in 5 days' : 'academic load is steady',
+      labels.includes('exam-cluster') ? 'midterm cluster starts in 5 days' : 'academic load is steady',
     ],
-    nextBestAction: 'Handle the symptom care decision first, then protect tonight for refill and sleep recovery.',
+    nextBestAction: 'Handle the symptom care decision first, then protect tonight for refill, meals, and sleep recovery.',
   };
 }
 
@@ -258,7 +503,7 @@ function buildCanaryState(state) {
   const activeModuleIds = Array.from(new Set([...defaultActiveModuleIds, ...state.activatedModuleIds]));
   return {
     profile: state.profile,
-    actions: createActionQueue(state.profile, state.completedActionIds),
+    actions: createActionQueue(state.profile, state.completedActionIds, state.activatedModuleIds),
     completedActionIds: state.completedActionIds,
     activatedModuleIds: state.activatedModuleIds,
     activeModules: moduleRegistry.filter((module) => activeModuleIds.includes(module.id)),
@@ -280,10 +525,39 @@ function createAgentMessage(state, role, text) {
 
 function buildAgentReply(state, text) {
   const normalized = text.toLowerCase();
-  const actions = createActionQueue(state.profile, state.completedActionIds);
+  const actions = createActionQueue(state.profile, state.completedActionIds, state.activatedModuleIds);
   const urgentAction = actions.find((action) => action.priority === 'urgent' && !action.completed);
   const refillAction = actions.find((action) => action.id === 'refill-stimulant' && !action.completed);
   const sleepAction = actions.find((action) => action.id === 'restart-academic-load' && !action.completed);
+  const nutritionAction = actions.find((action) => action.id === 'nutrition-lab-day-fallback' && !action.completed);
+  const financialAction = actions.find((action) => action.id === 'financial-stress-plan' && !action.completed);
+
+  if (normalized.includes('parent')) {
+    return [
+      'Parent-safe update Alex can send:',
+      '"I am in a busy week 7 stretch with midterms, but I have a plan for tonight, school tasks, and a few admin items. I will ask if I need help. THREAD is helping me keep track, and I control what gets shared."',
+      'This reassures without sharing symptoms, medication details, or records. The student controls whether anything more specific leaves the app.',
+    ].join(' ');
+  }
+
+  if (normalized.includes('tonight') || normalized.includes('plan')) {
+    return [
+      'Tonight:',
+      '1. Make the care decision first and use emergency care if symptoms feel severe, rapidly worse, or unsafe.',
+      '2. Send the refill note before the pharmacy window closes.',
+      '3. Eat a real recovery meal before the next study block.',
+      '4. Do one 45-minute bio practical block, then stop.',
+      '5. Protect 11:30 PM lights-out so tomorrow does not start in debt.',
+    ].join(' ');
+  }
+
+  if (normalized.includes('visit') || normalized.includes('care prep')) {
+    return [
+      'Care visit prep:',
+      'Onset was after the weekend cough, chest tightness and fever note are worse since yesterday, and Alex should bring current meds, stimulant refill timing, and the insurance card status.',
+      'Ask: what care level is right, what red flags should trigger urgent or emergency care, and what class or activity limits matter this week.',
+    ].join(' ');
+  }
 
   if (normalized.includes('chest') || normalized.includes('fever') || normalized.includes('symptom')) {
     return urgentAction
@@ -293,7 +567,7 @@ function buildAgentReply(state, text) {
 
   if (normalized.includes('refill') || normalized.includes('med') || normalized.includes('pharmacy')) {
     return refillAction
-      ? `I can help with the refill next: ${refillAction.detail}`
+      ? `I can help with the refill next: ${refillAction.detail} Draft to send: "Hi, I have four days left before Friday and want to avoid a gap during midterms. Do you need anything from me to approve or send the refill?"`
       : 'Your medication task is not currently the top open item, but I can still help prepare a refill note or med list.';
   }
 
@@ -303,11 +577,23 @@ function buildAgentReply(state, text) {
       : 'I can help rebuild the week with class, meals, study blocks, and one protected sleep window.';
   }
 
+  if (normalized.includes('meal') || normalized.includes('food') || normalized.includes('nutrition')) {
+    return nutritionAction
+      ? `Nutrition depth is on. Next useful move: ${nutritionAction.detail}`
+      : 'I can add Nutrition / Eating Patterns if Alex wants deeper help with lab-day meals. Without that module, I will only keep the missed-meal signal in context.';
+  }
+
+  if (normalized.includes('money') || normalized.includes('bill') || normalized.includes('fee')) {
+    return financialAction
+      ? `Financial Stress depth is on. Next useful move: ${financialAction.detail}`
+      : 'I can add Financial Stress if Alex wants help sorting lab fees, food-budget pressure, and what can be safely shared with parents.';
+  }
+
   if (normalized.includes('insurance') || normalized.includes('document') || normalized.includes('record')) {
     return 'I can keep records student-mediated. Add the card, form, receipt, or visit note in Records, and I will remember its status without sharing it.';
   }
 
-  return 'I can help triage what matters next, remember context, add the right module, or prepare a task. The highest open items are symptoms, refill, and sleep before exams.';
+  return 'I have already looked across symptoms, refill timing, sleep debt, midterms, meals, records, and money pressure. The highest open items are care level, refill, and week-7 recovery.';
 }
 
 async function readState(filePath) {
@@ -354,7 +640,9 @@ export async function createCanaryStore(options = {}) {
     },
 
     async completeAction(actionId) {
-      const action = createActionQueue(state.profile, state.completedActionIds).find((item) => item.id === actionId);
+      const action = createActionQueue(state.profile, state.completedActionIds, state.activatedModuleIds).find(
+        (item) => item.id === actionId,
+      );
       if (!action) {
         const error = new Error(`Unknown action: ${actionId}`);
         error.statusCode = 404;

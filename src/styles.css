@@ -304,6 +304,38 @@ p {
   color: var(--soft-ivory);
 }
 
+.agent-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.agent-tools button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(216, 161, 93, 0.28);
+  border-radius: 8px;
+  background: rgba(216, 161, 93, 0.1);
+  color: var(--soft-ivory);
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.agent-tools button:disabled {
+  cursor: default;
+  opacity: 0.44;
+}
+
+.agent-tools svg {
+  width: 16px;
+  height: 16px;
+}
+
 .agent-compose {
   display: grid;
   gap: 8px;

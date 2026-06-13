@@ -67,6 +67,18 @@ beforeEach(() => {
         mockState = {
           ...mockState,
           activatedModuleIds: ['nutrition-patterns'],
+          actions: [
+            ...mockState.actions,
+            {
+              id: 'nutrition-lab-day-fallback',
+              title: 'Build lab-day meal fallback',
+              detail: 'Turn skipped lunches into a realistic lab-day food plan.',
+              priority: 'medium',
+              moduleId: 'nutrition-patterns',
+              eta: 'This week',
+              completed: false,
+            },
+          ],
           activeModules: [
             ...mockState.activeModules,
             modules.find((module) => module.id === 'nutrition-patterns')!,
@@ -112,6 +124,9 @@ beforeEach(() => {
 
       if (path === '/api/agent/messages' && init?.method === 'POST') {
         const body = readBody(init);
+        const replyText = String(body.text).toLowerCase().includes('parent')
+          ? 'Parent-safe update Alex can send: I am handling a busy midterm week and have a plan. THREAD keeps private details under student control without sharing symptoms, medication details, or records.'
+          : 'Put the care level decision first. I can help you prepare the symptom history.';
         const studentMessage = {
           id: 'student-message-test',
           role: 'student' as const,
@@ -121,7 +136,7 @@ beforeEach(() => {
         const assistantMessage = {
           id: 'assistant-message-test',
           role: 'assistant' as const,
-          text: 'Put the care level decision first. I can help you prepare the symptom history.',
+          text: replyText,
           createdAt: '2026-06-13T20:00:01.000Z',
         };
         mockState = {
@@ -146,7 +161,7 @@ describe('THREAD app shell', () => {
 
     expect(screen.getByRole('heading', { name: /^thread$/i })).toBeInTheDocument();
     expect(screen.getByText(/your life\. understood\. what matters next\./i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /good morning, maya/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /good morning, alex rivera/i })).toBeInTheDocument();
     expect(screen.getByText(/i've been keeping track/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /current/i })).toBeInTheDocument();
@@ -177,11 +192,14 @@ describe('THREAD app shell', () => {
     await user.click(screen.getByRole('tab', { name: /tasks/i }));
 
     expect(screen.getByText(/nutrition \/ eating patterns/i)).toBeInTheDocument();
-    expect(screen.getByText(/available when useful/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/recommended now/i).length).toBeGreaterThan(1);
+    expect(screen.getByText(/sexual health \/ privacy/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /add nutrition module/i }));
 
     expect(screen.getByText(/nutrition module added/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: /current/i }));
+    expect(screen.getByText(/build lab-day meal fallback/i)).toBeInTheDocument();
   });
 
   it('lets the student complete an agent action', async () => {
@@ -207,6 +225,24 @@ describe('THREAD app shell', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ text: 'I have chest tightness and fever' }),
+      }),
+    );
+  });
+
+  it('lets the agent draft a parent-safe reassurance update from a quick tool', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /draft parent-safe update/i }));
+
+    expect(await screen.findByText(/parent-safe update alex can send/i)).toBeInTheDocument();
+    expect(screen.getByText(/without sharing symptoms, medication details, or records/i)).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/agent/messages',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ text: 'Draft a parent-safe update that reassures without sharing private details.' }),
       }),
     );
   });
