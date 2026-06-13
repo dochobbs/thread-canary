@@ -19,6 +19,14 @@ describe('College Life OS app shell', () => {
     expect(screen.getByRole('heading', { name: /weekly readout/i })).toBeInTheDocument();
   });
 
+  it('groups panels into stacked workspace columns instead of one auto-placed grid', () => {
+    render(<App />);
+
+    expect(screen.getByRole('region', { name: /primary agent workspace/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /student context/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /modules and records/i })).toBeInTheDocument();
+  });
+
   it('activates an on-demand module only after the student chooses it', async () => {
     const user = userEvent.setup();
     render(<App />);

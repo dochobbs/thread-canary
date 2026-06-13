@@ -40,27 +40,27 @@ export default function App() {
         </div>
       </section>
 
-      <div className="workspace">
-        <section className="top-row" aria-label="Student context">
+      <div className="dashboard-columns">
+        <section className="dashboard-column primary-column" aria-label="Primary agent workspace">
           <AgentPanel />
-          <LifeAuditPanel />
-        </section>
-
-        <section className="attention-row" aria-label="What needs attention">
           <ActionQueue actions={actions} completedActions={completedActions} onComplete={completeAction} />
-          <MemoryProfile profile={seedStudent} />
+          <RoutineOperator />
+          <AnalyticsPanel summary={weeklySummary} />
         </section>
 
-        <section className="operations-grid" aria-label="Agent operations">
-          <RoutineOperator />
+        <section className="dashboard-column context-column" aria-label="Student context">
+          <LifeAuditPanel />
+          <MemoryProfile profile={seedStudent} />
+          <DataVault profile={seedStudent} />
+        </section>
+
+        <section className="dashboard-column modules-column" aria-label="Modules and records">
           <ModuleDeck
             activeModules={activeModules}
             recommendedModules={recommendedModules}
             activatedModuleIds={activatedModuleIds}
             onActivate={activateModule}
           />
-          <DataVault profile={seedStudent} />
-          <AnalyticsPanel summary={weeklySummary} />
           <SafetyPanel profile={seedStudent} />
         </section>
       </div>
