@@ -364,8 +364,16 @@ export async function createCanaryStore(options = {}) {
         kind: document.kind ?? 'Uploaded document',
         status: document.status ?? 'Captured',
       };
-      state.profile.documents.push(nextDocument);
-      appendEvent(state, 'document.added', { documentId: nextDocument.id });
+      const existingDocument = state.profile.documents.find(
+        (item) => item.title === nextDocument.title && item.kind === nextDocument.kind,
+      );
+      if (existingDocument) {
+        existingDocument.status = nextDocument.status;
+        appendEvent(state, 'document.updated', { documentId: existingDocument.id });
+      } else {
+        state.profile.documents.push(nextDocument);
+        appendEvent(state, 'document.added', { documentId: nextDocument.id });
+      }
       return persist();
     },
   };

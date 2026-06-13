@@ -58,4 +58,17 @@ describe('canary store', () => {
     expect(state.profile.memory).toContain('Has a Saturday morning lab during finals week.');
     expect(persisted.profile.memory).toContain('Has a Saturday morning lab during finals week.');
   });
+
+  it('updates matching documents instead of duplicating them', async () => {
+    const { store } = await createTempStore();
+
+    await store.addDocument({ title: 'Canary smoke record', kind: 'Receipt', status: 'Captured' });
+    const state = await store.addDocument({ title: 'Canary smoke record', kind: 'Receipt', status: 'Needs review' });
+    const matches = state.profile.documents.filter(
+      (document) => document.title === 'Canary smoke record' && document.kind === 'Receipt',
+    );
+
+    expect(matches).toHaveLength(1);
+    expect(matches[0].status).toBe('Needs review');
+  });
 });
