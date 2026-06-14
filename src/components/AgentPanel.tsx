@@ -13,6 +13,7 @@ import type { AgentMessage, DemoMoment } from '../api/client';
 
 interface AgentPanelProps {
   studentName?: string;
+  insights?: string[];
   messages?: AgentMessage[];
   demoMoments?: DemoMoment[];
   isSending?: boolean;
@@ -75,6 +76,7 @@ function momentAriaLabel(moment: DemoMoment) {
 
 export function AgentPanel({
   studentName = 'Alex Rivera',
+  insights = defaultInsights,
   messages = [],
   demoMoments = fallbackDemoMoments,
   isSending = false,
@@ -115,7 +117,7 @@ export function AgentPanel({
         {messages.length === 0 ? (
           <div className="agent-insight">
             <ul>
-              {defaultInsights.map((insight) => (
+              {insights.map((insight) => (
                 <li key={insight}>{insight}</li>
               ))}
             </ul>
@@ -146,7 +148,7 @@ export function AgentPanel({
           </article>
         ) : null}
       </div>
-      <div className="agent-tools" aria-label="Demo moments">
+      <div className="agent-tools" aria-label="Starter prompts">
         {demoMoments.map((moment) => {
           const Icon = momentIcons[moment.id] ?? FlaskConical;
           return (

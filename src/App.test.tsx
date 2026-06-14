@@ -6,13 +6,134 @@ import type { CanaryState } from './api/client';
 import { createActionQueue, recommendModules, summarizeWeek } from './domain/agent';
 import { modules } from './domain/modules';
 import { seedStudent } from './domain/seedData';
+import type { StudentProfile } from './domain/types';
 
 let mockState: CanaryState;
 
-function createMockState(): CanaryState {
+function createMayaStudent(): StudentProfile {
   return {
-    profile: structuredClone(seedStudent),
-    actions: createActionQueue(seedStudent).map((action) => ({ ...action, completed: false })),
+    ...structuredClone(seedStudent),
+    id: 'maya-thompson',
+    name: 'Maya Thompson',
+    schoolContext:
+      'Week 7 at Northview State; first-year engineering student with design studio, calculus, dining constraints, and diabetes self-management colliding.',
+    demographics: {
+      ...seedStudent.demographics,
+      chosenName: 'Maya',
+      pronouns: 'she/her',
+      residence: 'Maple Hall room 204',
+      major: 'Mechanical Engineering',
+      hometown: 'Tampa, Florida',
+    },
+    healthProfile: {
+      ...seedStudent.healthProfile,
+      conditions: [
+        { name: 'Type 1 diabetes', status: 'managed with pump and CGM', notes: 'Needs backup insulin and sick-day plan.' },
+        { name: 'Celiac disease', status: 'strict gluten avoidance', notes: 'Dining hall cross-contact is a recurring issue.' },
+        { name: 'Peanut and tree nut allergy', status: 'anaphylaxis risk', notes: 'Carries epinephrine auto-injector.' },
+      ],
+      currentMedications: [
+        {
+          name: 'insulin lispro',
+          label: 'Pump insulin',
+          dose: 'pump basal and bolus per endocrinology settings',
+          schedule: 'continuous pump',
+          purpose: 'Type 1 diabetes',
+          refillStatus: 'Pump cartridges and infusion sets due next week',
+        },
+        {
+          name: 'epinephrine auto-injector',
+          label: 'Anaphylaxis rescue',
+          dose: '0.3 mg',
+          schedule: 'as directed for severe allergic reaction',
+          purpose: 'Severe allergy rescue',
+          refillStatus: 'One dorm pen expires next month',
+        },
+      ],
+      allergies: ['peanut and tree nut - anaphylaxis risk', 'gluten - celiac disease'],
+      currentConcern: {
+        summary: 'CGM overnight lows and nausea after missed gluten-safe dinner during studio week.',
+        onset: 'Week 7 after two late studio nights.',
+        redFlags: ['overnight lows', 'nausea with diabetes sick-day rules to check', 'pump site irritation'],
+        recentSelfCare: ['treated two lows with glucose tabs', 'changed pump site', 'skipped dining hall dinner'],
+        visitPrep: ['Bring CGM export, pump settings, sick-day plan, and ketone supplies status.'],
+      },
+      carePreferences: ['Use Maya and she/her in care settings.', 'Do not share diabetes details with parents unless Maya asks.'],
+    },
+    pediatricianPacket: {
+      practice: 'Bayside Pediatrics',
+      clinician: 'Dr. Lena Ortiz',
+      received: 'Move-in week',
+      summary: 'College transition packet for Type 1 diabetes, celiac disease, anaphylaxis, asthma, and accommodations.',
+      artifacts: [
+        {
+          id: 'maya-diabetes-sick-day-plan',
+          title: 'Diabetes sick-day and ketone plan',
+          kind: 'Pediatrician packet',
+          status: 'Captured',
+          source: 'pediatrician',
+          body: 'Check ketones during illness, persistent hyperglycemia, vomiting, or pump failure and contact care team per plan.',
+        },
+        {
+          id: 'maya-anaphylaxis-action-plan',
+          title: 'Anaphylaxis action plan',
+          kind: 'Pediatrician packet',
+          status: 'Captured',
+          source: 'pediatrician',
+          body: 'Use epinephrine for severe allergy symptoms and seek emergency care after use.',
+        },
+      ],
+    },
+    documents: [
+      {
+        id: 'maya-transition-packet',
+        title: 'Bayside Pediatrics college transition packet',
+        kind: 'Pediatrician packet',
+        status: 'Captured',
+        source: 'pediatrician',
+      },
+      {
+        id: 'maya-diabetes-sick-day-plan',
+        title: 'Diabetes sick-day and ketone plan',
+        kind: 'Pediatrician packet',
+        status: 'Captured',
+        source: 'pediatrician',
+      },
+    ],
+    signals: [
+      {
+        id: 'symptom-red-flag',
+        label: 'Diabetes safety note',
+        value: 'overnight lows plus nausea and pump site irritation',
+        severity: 'urgent',
+      },
+      { id: 'sleep-debt', label: 'Sleep debt', value: 'studio nights pushed sleep below 6h', severity: 'high' },
+      { id: 'missed-meals', label: 'Dining gap', value: 'gluten-safe dinner missed twice', severity: 'medium' },
+    ],
+  };
+}
+
+function createMockState(profile: StudentProfile = seedStudent): CanaryState {
+  return {
+    selectedStudentId: profile.id,
+    students: [
+      {
+        id: 'alex-rivera',
+        name: 'Alex Rivera',
+        year: 'First-year student, halfway through first semester',
+        campus: 'Northview State University',
+        summary: 'Biology, club soccer, ADHD refill, acute cough and fever.',
+      },
+      {
+        id: 'maya-thompson',
+        name: 'Maya Thompson',
+        year: 'First-year student, halfway through first semester',
+        campus: 'Northview State University',
+        summary: 'Engineering, Type 1 diabetes, celiac dining, allergy safety.',
+      },
+    ],
+    profile: structuredClone(profile),
+    actions: createActionQueue(profile).map((action) => ({ ...action, completed: false })),
     completedActionIds: [],
     activatedModuleIds: [],
     customActions: [],
@@ -44,9 +165,9 @@ function createMockState(): CanaryState {
         prompt: 'Make me a plan for tonight.',
       },
     ],
-    activeModules: modules.filter((module) => seedStudent.activeModuleIds.includes(module.id)),
-    recommendedModules: recommendModules(seedStudent).map((module) => ({ ...module, activated: false })),
-    weeklySummary: summarizeWeek(seedStudent),
+    activeModules: modules.filter((module) => profile.activeModuleIds.includes(module.id)),
+    recommendedModules: recommendModules(profile).map((module) => ({ ...module, activated: false })),
+    weeklySummary: summarizeWeek(profile),
     agentMessages: [],
     events: [],
   };
@@ -88,6 +209,11 @@ beforeEach(() => {
       const path = readPath(input);
 
       if (path === '/api/canary-state') {
+        return jsonResponse(mockState);
+      }
+
+      if (path === '/api/students/maya-thompson/select' && init?.method === 'POST') {
+        mockState = createMockState(createMayaStudent());
         return jsonResponse(mockState);
       }
 
@@ -231,6 +357,8 @@ describe('THREAD app shell', () => {
 
     expect(screen.getByRole('heading', { name: /^thread$/i })).toBeInTheDocument();
     expect(screen.getByText(/your life\. understood\. what matters next\./i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /pretend as alex rivera/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /pretend as maya thompson/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /good morning, alex rivera/i })).toBeInTheDocument();
     expect(screen.getByText(/i've been keeping track/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
@@ -238,6 +366,23 @@ describe('THREAD app shell', () => {
     expect(screen.getByRole('heading', { name: /context readout/i })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /deep modules/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /document vault/i })).not.toBeInTheDocument();
+  });
+
+  it('switches the full local demo into another college student', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /pretend as maya thompson/i }));
+
+    expect(await screen.findByRole('heading', { name: /good morning, maya thompson/i })).toBeInTheDocument();
+    expect(screen.getByText(/type 1 diabetes/i)).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith('/api/students/maya-thompson/select', expect.objectContaining({ method: 'POST' }));
+
+    await user.click(screen.getByRole('tab', { name: /vault/i }));
+
+    expect(screen.getByRole('heading', { name: /pediatrician packet/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/bayside pediatrics/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/diabetes sick-day and ketone plan/i).length).toBeGreaterThan(0);
   });
 
   it('keeps secondary tools behind tabs', async () => {

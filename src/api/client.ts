@@ -42,7 +42,17 @@ export interface DemoMoment {
   prompt: string;
 }
 
+export interface StudentOption {
+  id: string;
+  name: string;
+  year: string;
+  campus: string;
+  summary: string;
+}
+
 export interface CanaryState {
+  selectedStudentId: string;
+  students: StudentOption[];
   profile: StudentProfile;
   actions: AgentAction[];
   completedActionIds: string[];
@@ -91,6 +101,10 @@ function requestCanaryState(path: string, init?: RequestInit) {
 
 export function getCanaryState() {
   return requestCanaryState('/api/canary-state');
+}
+
+export function selectCanaryStudent(studentId: string) {
+  return requestCanaryState(`/api/students/${encodeURIComponent(studentId)}/select`, { method: 'POST' });
 }
 
 export function completeCanaryAction(actionId: string) {

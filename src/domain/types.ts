@@ -40,6 +40,23 @@ export interface StudentMedication {
   refillStatus: string;
 }
 
+export interface StudentDocument {
+  id: string;
+  title: string;
+  kind: string;
+  status: string;
+  source?: string;
+  body?: string;
+}
+
+export interface PediatricianPacket {
+  practice: string;
+  clinician: string;
+  received: string;
+  summary: string;
+  artifacts: StudentDocument[];
+}
+
 export interface StudentHealthProfile {
   conditions: Array<{
     name: string;
@@ -87,12 +104,15 @@ export interface StudentSupportContact {
 }
 
 export interface StudentProfile {
+  id: string;
   name: string;
   year: string;
+  displaySummary?: string;
   schoolContext: string;
   privacyMode: string;
   demographics: StudentProfileDemographics;
   healthProfile: StudentHealthProfile;
+  pediatricianPacket: PediatricianPacket;
   careTimeline: StudentCareTimelineEvent[];
   wearableSummary: {
     lastSynced: string;
@@ -121,12 +141,7 @@ export interface StudentProfile {
   signals: StudentSignal[];
   activeModuleIds: string[];
   availableModuleIds: string[];
-  documents: Array<{
-    id: string;
-    title: string;
-    kind: string;
-    status: string;
-  }>;
+  documents: StudentDocument[];
 }
 
 export interface AgentAction {

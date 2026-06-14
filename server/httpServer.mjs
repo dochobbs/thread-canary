@@ -98,6 +98,12 @@ async function routeApi(request, response, store, pathname) {
     return;
   }
 
+  const studentMatch = pathname.match(/^\/api\/students\/([^/]+)\/select$/);
+  if (request.method === 'POST' && studentMatch) {
+    sendJson(response, 200, await store.selectStudent(decodeURIComponent(studentMatch[1])));
+    return;
+  }
+
   const actionMatch = pathname.match(/^\/api\/actions\/([^/]+)\/complete$/);
   if (request.method === 'POST' && actionMatch) {
     sendJson(response, 200, await store.completeAction(decodeURIComponent(actionMatch[1])));

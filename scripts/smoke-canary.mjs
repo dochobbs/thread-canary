@@ -44,7 +44,13 @@ async function main() {
   const html = await request('/');
   assert(typeof html === 'string' && html.includes('id="root"'), 'Root route did not serve the built app shell.');
 
-  const state = await request('/api/canary-state');
+  const state = await request('/api/students/alex-rivera/select', { method: 'POST' });
+  assert(state.selectedStudentId === 'alex-rivera', 'Canary state did not reset to the Alex local demo student.');
+  assert(
+    state.students?.some((student) => student.id === 'alex-rivera') &&
+      state.students?.some((student) => student.id === 'maya-thompson'),
+    'Canary state did not include both local demo students.',
+  );
   assert(state.profile?.name === 'Alex Rivera', 'Canary state did not include the week-7 demo student profile.');
   assert(
     state.profile?.schoolContext?.includes('Week 7'),
@@ -70,6 +76,34 @@ async function main() {
   );
   assert(Array.isArray(state.artifacts), 'Canary state did not include agent artifacts.');
   assert(Array.isArray(state.actions) && state.actions.length > 0, 'Canary state did not include agent actions.');
+
+  const mayaState = await request('/api/students/maya-thompson/select', { method: 'POST' });
+  assert(mayaState.selectedStudentId === 'maya-thompson', 'Student selector did not switch to Maya.');
+  assert(mayaState.profile?.name === 'Maya Thompson', 'Maya local demo profile did not load.');
+  assert(
+    mayaState.profile?.pediatricianPacket?.artifacts?.some((artifact) => artifact.id === 'maya-diabetes-sick-day-plan'),
+    'Maya profile did not include pediatrician transition artifacts.',
+  );
+  assert(
+    mayaState.profile?.documents?.some((document) => document.title === 'Diabetes sick-day and ketone plan'),
+    'Maya document vault did not include pediatrician packet records.',
+  );
+
+  const mayaAgentPayload = await request('/api/agent/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text: 'What meds and allergies do I have on record?' }),
+  });
+  assertAgentReply(mayaAgentPayload, 'Maya selected-student agent message');
+  assert(mayaAgentPayload.state?.selectedStudentId === 'maya-thompson', 'Maya agent reply changed selected student.');
+  if (mayaAgentPayload.reply.source === 'fallback') {
+    assert(
+      mayaAgentPayload.reply.text.includes('insulin lispro') &&
+        mayaAgentPayload.reply.text.includes('peanut and tree nut'),
+      'Maya fallback reply did not use selected-student meds and allergies.',
+    );
+  }
+
+  await request('/api/students/alex-rivera/select', { method: 'POST' });
 
   const completedState = await request('/api/actions/care-red-flag/complete', { method: 'POST' });
   assert(
@@ -182,6 +216,8 @@ async function main() {
       'Arbitrary-question fallback did not offer a concrete next artifact.',
     );
   }
+
+  await request('/api/students/alex-rivera/select', { method: 'POST' });
 
   console.log(`Canary smoke passed at ${baseUrl}`);
 }

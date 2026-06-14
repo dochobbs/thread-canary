@@ -5,6 +5,7 @@ import {
   addCanaryMemory,
   completeCanaryAction,
   getCanaryState,
+  selectCanaryStudent,
   sendCanaryAgentMessage,
   type CanaryState,
   type DocumentInput,
@@ -17,8 +18,10 @@ import { DataVault } from './components/DataVault';
 import { LifeAuditPanel } from './components/LifeAuditPanel';
 import { MemoryProfile } from './components/MemoryProfile';
 import { ModuleDeck } from './components/ModuleDeck';
+import { PediatricianPacket } from './components/PediatricianPacket';
 import { RoutineOperator } from './components/RoutineOperator';
 import { SafetyPanel } from './components/SafetyPanel';
+import { StudentSwitcher } from './components/StudentSwitcher';
 import { waitForAgentWorkingDwell } from './domain/agentTiming';
 import type { AgentAction, DeepModule } from './domain/types';
 
@@ -39,6 +42,7 @@ export default function App() {
   const [isSendingAgent, setIsSendingAgent] = useState(false);
   const [isSavingMemory, setIsSavingMemory] = useState(false);
   const [isSavingDocument, setIsSavingDocument] = useState(false);
+  const [isSwitchingStudent, setIsSwitchingStudent] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -67,6 +71,16 @@ export default function App() {
 
   async function activateModule(module: DeepModule) {
     await applyStateMutation(() => activateCanaryModule(module.id));
+  }
+
+  async function selectStudent(studentId: string) {
+    setIsSwitchingStudent(true);
+    try {
+      await applyStateMutation(() => selectCanaryStudent(studentId));
+      setActiveSection('current');
+    } finally {
+      setIsSwitchingStudent(false);
+    }
   }
 
   async function sendAgentMessage(text: string) {
@@ -137,6 +151,7 @@ export default function App() {
       case 'vault':
         return (
           <>
+            <PediatricianPacket profile={canaryState.profile} />
             <DataVault profile={canaryState.profile} isSaving={isSavingDocument} onAddDocument={addDocument} />
             <SafetyPanel profile={canaryState.profile} />
           </>
@@ -169,10 +184,20 @@ export default function App() {
         <p>Your life. Understood. What matters next.</p>
       </section>
 
+      {canaryState ? (
+        <StudentSwitcher
+          students={canaryState.students}
+          selectedStudentId={canaryState.selectedStudentId}
+          isSwitching={isSwitchingStudent}
+          onSelect={selectStudent}
+        />
+      ) : null}
+
       <div className="focus-layout">
         <section className="today-column" aria-label="Today">
           <AgentPanel
             studentName={canaryState?.profile.name}
+            insights={canaryState?.profile.signals.slice(0, 3).map((signal) => `${signal.label}: ${signal.value}`)}
             messages={canaryState?.agentMessages ?? []}
             demoMoments={canaryState?.demoMoments}
             isSending={isSendingAgent}

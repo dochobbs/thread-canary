@@ -17,6 +17,14 @@ describe('canary store', () => {
 
     const state = await store.getCanaryState();
 
+    expect(state.selectedStudentId).toBe('alex-rivera');
+    expect(state.students).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'alex-rivera', name: 'Alex Rivera' }),
+        expect.objectContaining({ id: 'maya-thompson', name: 'Maya Thompson' }),
+      ]),
+    );
+    expect(state.profile.id).toBe('alex-rivera');
     expect(state.profile.name).toBe('Alex Rivera');
     expect(state.profile.schoolContext).toContain('Week 7');
     expect(state.profile.demographics).toMatchObject({
@@ -36,6 +44,18 @@ describe('canary store', () => {
     );
     expect(state.profile.healthProfile.allergies).toContain('amoxicillin - rash as a child');
     expect(state.profile.healthProfile.currentConcern.redFlags).toContain('chest tightness plus fever worse since yesterday');
+    expect(state.profile.pediatricianPacket).toMatchObject({
+      practice: 'Cedar Valley Pediatrics',
+      clinician: 'Dr. Mira Shah',
+    });
+    expect(state.profile.pediatricianPacket.artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'alex-adhd-medication-continuity',
+          title: 'ADHD medication continuity letter',
+        }),
+      ]),
+    );
     expect(state.profile.careTimeline.map((event) => event.id)).toContain('weekend-cough');
     expect(state.profile.wearableSummary.sleep).toContain('5h 42m');
     expect(state.profile.academicCalendar.map((event) => event.title)).toContain('BIO 111 practical');
@@ -56,6 +76,51 @@ describe('canary store', () => {
     expect(state.activeModules.map((module) => module.id)).toContain('care-navigation');
     expect(state.recommendedModules.map((module) => module.id)).toContain('nutrition-patterns');
     expect(state.recommendedModules.map((module) => module.id)).toContain('sexual-health-privacy');
+  });
+
+  it('switches to a second fully built student and resets the local demo state', async () => {
+    const { store } = await createTempStore();
+
+    await store.completeAction('care-red-flag');
+    await store.sendAgentMessage('What do I tell my mom?');
+    const mayaState = await store.selectStudent('maya-thompson');
+
+    expect(mayaState.selectedStudentId).toBe('maya-thompson');
+    expect(mayaState.profile).toMatchObject({
+      id: 'maya-thompson',
+      name: 'Maya Thompson',
+      year: 'First-year student, halfway through first semester',
+      demographics: {
+        chosenName: 'Maya',
+        residence: 'Maple Hall room 204',
+      },
+    });
+    expect(mayaState.profile.healthProfile.conditions.map((condition) => condition.name)).toEqual(
+      expect.arrayContaining(['Type 1 diabetes', 'Celiac disease', 'Peanut and tree nut allergy']),
+    );
+    expect(mayaState.profile.healthProfile.currentMedications.map((medication) => medication.name)).toEqual(
+      expect.arrayContaining(['insulin lispro', 'albuterol HFA', 'epinephrine auto-injector']),
+    );
+    expect(mayaState.profile.pediatricianPacket).toMatchObject({
+      practice: 'Bayside Pediatrics',
+      clinician: 'Dr. Lena Ortiz',
+    });
+    expect(mayaState.profile.pediatricianPacket.artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'maya-diabetes-sick-day-plan', title: 'Diabetes sick-day and ketone plan' }),
+        expect.objectContaining({ id: 'maya-anaphylaxis-action-plan', title: 'Anaphylaxis action plan' }),
+      ]),
+    );
+    expect(mayaState.profile.documents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: 'Bayside Pediatrics college transition packet', source: 'pediatrician' }),
+        expect.objectContaining({ title: 'Diabetes sick-day and ketone plan', source: 'pediatrician' }),
+      ]),
+    );
+    expect(mayaState.completedActionIds).toEqual([]);
+    expect(mayaState.agentMessages).toEqual([]);
+    expect(mayaState.actions.map((action) => action.id)).toContain('care-red-flag');
+    expect(mayaState.actions.find((action) => action.id === 'care-red-flag').detail).toContain('overnight lows');
   });
 
   it('persists completed actions', async () => {
@@ -277,6 +342,47 @@ describe('canary store', () => {
     );
   });
 
+  it('passes only the selected student and pediatrician artifacts to the general responder', async () => {
+    let receivedRequest;
+    const { store } = await createTempStore({
+      agentResponder: async (request) => {
+        receivedRequest = request;
+        return {
+          text: 'You have the diabetes sick-day plan from Bayside Pediatrics in your records.',
+          source: 'llm',
+          model: 'demo-model',
+        };
+      },
+    });
+
+    await store.selectStudent('maya-thompson');
+    const result = await store.sendAgentMessage('What did my pediatrician send with me to school?');
+
+    expect(result.reply.source).toBe('llm');
+    expect(receivedRequest.context.profile.name).toBe('Maya Thompson');
+    expect(receivedRequest.context.profile.pediatricianPacket.artifacts.map((artifact) => artifact.id)).toContain(
+      'maya-diabetes-sick-day-plan',
+    );
+    expect(JSON.stringify(receivedRequest.context)).toContain('Bayside Pediatrics');
+    expect(JSON.stringify(receivedRequest.context)).not.toContain('Alex Rivera');
+    expect(JSON.stringify(receivedRequest.context)).not.toContain('Cedar Valley Pediatrics');
+  });
+
+  it('answers selected-student medication, allergy, and pediatrician questions without an LLM', async () => {
+    const { store } = await createTempStore();
+
+    await store.selectStudent('maya-thompson');
+    const medResult = await store.sendAgentMessage('What meds do I have on record?');
+    const allergyResult = await store.sendAgentMessage('What are my allergies?');
+    const packetResult = await store.sendAgentMessage('What pediatrician records came with me?');
+
+    expect(medResult.reply.text).toContain('insulin lispro');
+    expect(medResult.reply.text).toContain('glucagon nasal powder');
+    expect(allergyResult.reply.text).toContain('peanut and tree nut');
+    expect(packetResult.reply.text).toContain('Bayside Pediatrics');
+    expect(packetResult.reply.text).toContain('Diabetes sick-day and ketone plan');
+  });
+
   it('falls back to a private-operator answer when the general responder fails', async () => {
     const { store } = await createTempStore({
       agentResponder: async () => {
@@ -303,7 +409,7 @@ describe('canary store', () => {
     expect(reply).toContain('Yeah. This is getting loud.');
     expect(reply).toContain('Week 7');
     expect(reply).toContain('I would keep the details private for now');
-    expect(reply).toContain('Want me to draft that, or handle the chest/fever decision first?');
+    expect(reply).toContain('Want me to draft that, or handle the chest tightness plus fever');
     expect(reply).not.toContain('student-owned');
     expect(reply).not.toContain('THREAD');
     expect(reply.match(/\?/g)).toHaveLength(1);
@@ -314,10 +420,10 @@ describe('canary store', () => {
 
     const result = await store.sendAgentMessage('My chest feels weird and I have a fever but I also have lab.');
 
-    expect(result.reply.text).toContain('Before we plan around lab');
+    expect(result.reply.text).toContain('Before we plan around school');
     expect(result.reply.text).toContain('trouble breathing');
     expect(result.reply.text).toContain('use emergency care now');
-    expect(result.reply.text).toContain('If not, I can make the symptom note');
+    expect(result.reply.text).toContain('If not, I can make the health note');
   });
 
   it('drafts a parent-safe update without exposing private student details', async () => {

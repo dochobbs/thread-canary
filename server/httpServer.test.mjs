@@ -50,9 +50,36 @@ describe('canary HTTP server', () => {
       expect(healthResponse.status).toBe(200);
       expect(health).toEqual({ ok: true, service: 'thread-canary' });
       expect(stateResponse.status).toBe(200);
+      expect(state.selectedStudentId).toBe('alex-rivera');
+      expect(state.students).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'alex-rivera', name: 'Alex Rivera' }),
+          expect.objectContaining({ id: 'maya-thompson', name: 'Maya Thompson' }),
+        ]),
+      );
       expect(state.profile.name).toBe('Alex Rivera');
       expect(state.profile.schoolContext).toContain('Week 7');
       expect(state.actions.map((action) => action.id)).toContain('care-red-flag');
+    } finally {
+      await closeServer(server);
+    }
+  });
+
+  it('switches the selected local demo student through the API', async () => {
+    const { server, url } = await createRunningServer();
+
+    try {
+      const response = await fetch(`${url}/api/students/maya-thompson/select`, { method: 'POST' });
+      const state = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(state.selectedStudentId).toBe('maya-thompson');
+      expect(state.profile.name).toBe('Maya Thompson');
+      expect(state.profile.pediatricianPacket.practice).toBe('Bayside Pediatrics');
+      expect(state.profile.documents).toEqual(
+        expect.arrayContaining([expect.objectContaining({ title: 'Diabetes sick-day and ketone plan' })]),
+      );
+      expect(state.agentMessages).toEqual([]);
     } finally {
       await closeServer(server);
     }

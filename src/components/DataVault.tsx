@@ -40,6 +40,7 @@ export function DataVault({ profile, isSaving = false, onAddDocument }: DataVaul
             <span>{document.kind}</span>
             <strong>{document.title}</strong>
             <p>{document.status}</p>
+            {document.source ? <p className="document-source">{document.source}</p> : null}
           </article>
         ))}
       </div>

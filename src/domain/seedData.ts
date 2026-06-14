@@ -1,8 +1,10 @@
 import type { StudentProfile } from './types';
 
 export const seedStudent: StudentProfile = {
+  id: 'alex-rivera',
   name: 'Alex Rivera',
   year: 'First-year student, halfway through first semester',
+  displaySummary: 'Biology, club soccer, ADHD refill, acute cough and fever.',
   schoolContext:
     'Week 7 at Northview State; biology major with two lab sections, club soccer, work-study, and midterms stacking up.',
   privacyMode: 'Student-owned. Parents can pay, but content stays private unless shared.',
@@ -90,6 +92,55 @@ export const seedStudent: StudentProfile = {
       'Prefers urgent care over campus clinic after 6 PM.',
       'Does not want parent contact unless Alex asks first.',
       'Wants a short written symptom timeline before visits because recall gets worse when stressed.',
+    ],
+  },
+  pediatricianPacket: {
+    practice: 'Cedar Valley Pediatrics',
+    clinician: 'Dr. Mira Shah',
+    received: 'Move-in week',
+    summary:
+      'College transition packet covering ADHD medication continuity, migraine history, bronchospasm history, immunizations, sports clearance, and privacy preferences.',
+    artifacts: [
+      {
+        id: 'alex-adhd-medication-continuity',
+        title: 'ADHD medication continuity letter',
+        kind: 'Pediatrician packet',
+        status: 'Captured',
+        source: 'pediatrician',
+        body: 'Confirms lisdexamfetamine history, refill timing risk during school transition, and need for predictable morning routine.',
+      },
+      {
+        id: 'alex-migraine-care-plan',
+        title: 'Migraine care plan',
+        kind: 'Pediatrician packet',
+        status: 'Captured',
+        source: 'pediatrician',
+        body: 'Notes migraine without aura pattern, rescue medication on file, and triggers including poor sleep, skipped meals, and stress.',
+      },
+      {
+        id: 'alex-bronchospasm-history',
+        title: 'Exercise-induced bronchospasm history',
+        kind: 'Pediatrician packet',
+        status: 'Captured',
+        source: 'pediatrician',
+        body: 'Remote exercise-induced bronchospasm history; relevant if chest tightness, cough, fever, or exertional symptoms return.',
+      },
+      {
+        id: 'alex-immunization-summary',
+        title: 'College immunization summary',
+        kind: 'Pediatrician packet',
+        status: 'Cleared',
+        source: 'pediatrician',
+        body: 'MMR and meningococcal records cleared by campus; influenza due this season.',
+      },
+      {
+        id: 'alex-sports-clearance-note',
+        title: 'Club sports clearance note',
+        kind: 'Pediatrician packet',
+        status: 'Needs campus copy',
+        source: 'pediatrician',
+        body: 'General participation clearance with recommendation to reassess ankle sprain recovery before tournament play.',
+      },
     ],
   },
   careTimeline: [
@@ -279,9 +330,23 @@ export const seedStudent: StudentProfile = {
     { id: 'financial-stress', label: 'Money pressure', value: 'lab fee and dining shortfall due before payday', severity: 'medium' },
   ],
   documents: [
+    {
+      id: 'alex-transition-packet',
+      title: 'Cedar Valley Pediatrics college transition packet',
+      kind: 'Pediatrician packet',
+      status: 'Captured',
+      source: 'pediatrician',
+    },
+    {
+      id: 'alex-adhd-medication-continuity',
+      title: 'ADHD medication continuity letter',
+      kind: 'Pediatrician packet',
+      status: 'Captured',
+      source: 'pediatrician',
+    },
     { id: 'insurance', title: 'Insurance card', kind: 'Card', status: 'Front captured, back missing' },
-    { id: 'rx', title: 'Stimulant prescription label', kind: 'Medication', status: 'Captured' },
-    { id: 'immunization', title: 'Immunization record', kind: 'Campus form', status: 'Cleared' },
+    { id: 'rx', title: 'Stimulant prescription label', kind: 'Medication', status: 'Captured', source: 'student upload' },
+    { id: 'immunization', title: 'Immunization record', kind: 'Campus form', status: 'Cleared', source: 'pediatrician' },
     { id: 'health-intake', title: 'Campus health intake form', kind: 'Campus form', status: 'Needs signature' },
     { id: 'sports-clearance', title: 'Club sports clearance', kind: 'Campus form', status: 'Due before tournament' },
     { id: 'lab-fee', title: 'Chemistry lab fee receipt', kind: 'Receipt', status: 'Needs review' },
