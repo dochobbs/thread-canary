@@ -15,6 +15,35 @@ function createMockState(): CanaryState {
     actions: createActionQueue(seedStudent).map((action) => ({ ...action, completed: false })),
     completedActionIds: [],
     activatedModuleIds: [],
+    customActions: [],
+    artifacts: [],
+    demoMoments: [
+      {
+        id: 'urgent-care',
+        label: 'Urgent care?',
+        prompt: 'Do I need urgent care tonight? Prepare what I should tell them.',
+      },
+      {
+        id: 'parent-update',
+        label: 'Parent text',
+        prompt: 'What do I tell my mom without giving her everything?',
+      },
+      {
+        id: 'lab-ta-message',
+        label: 'Lab TA',
+        prompt: 'What should I say to my lab TA if I miss lab?',
+      },
+      {
+        id: 'add-acute-module',
+        label: 'Add acute depth',
+        prompt: 'Add the acute illness module. What changes?',
+      },
+      {
+        id: 'tonight-plan',
+        label: 'Tonight plan',
+        prompt: 'Make me a plan for tonight.',
+      },
+    ],
     activeModules: modules.filter((module) => seedStudent.activeModuleIds.includes(module.id)),
     recommendedModules: recommendModules(seedStudent).map((module) => ({ ...module, activated: false })),
     weeklySummary: summarizeWeek(seedStudent),
@@ -134,8 +163,35 @@ beforeEach(() => {
 
       if (path === '/api/agent/messages' && init?.method === 'POST') {
         const body = readBody(init);
-        const replyText = String(body.text).toLowerCase().includes('parent')
+        const toolCalls = String(body.text).toLowerCase().includes('urgent care')
+          ? [
+              {
+                name: 'prepare_urgent_care_note',
+                label: 'Prepared urgent care note',
+                status: 'done' as const,
+                artifactId: 'urgent-care-visit-note',
+              },
+            ]
+          : [];
+        const artifacts = String(body.text).toLowerCase().includes('urgent care')
+          ? [
+              {
+                id: 'urgent-care-visit-note',
+                kind: 'visit_note',
+                title: 'Urgent care note',
+                audience: 'urgent care triage',
+                consent: 'student-controlled',
+                body: 'Fever and chest tightness worse since yesterday. Bring medication list and allergy.',
+                createdAt: '2026-06-13T20:00:01.000Z',
+                updatedAt: '2026-06-13T20:00:01.000Z',
+              },
+            ]
+          : mockState.artifacts;
+        const replyText =
+          String(body.text).toLowerCase().includes('parent') || String(body.text).toLowerCase().includes('mom')
           ? "Send this: I am okay enough to handle tonight. It is a heavy week, but I have a plan. Please don't call around. It calms them down without handing over symptoms, medication details, or records."
+          : String(body.text).toLowerCase().includes('urgent care')
+            ? 'I prepared the urgent care note and share packet.'
           : 'Put the care level decision first. I can help you prepare the symptom history.';
         const studentMessage = {
           id: 'student-message-test',
@@ -149,10 +205,12 @@ beforeEach(() => {
           text: replyText,
           source: 'llm' as const,
           model: 'demo-model',
+          toolCalls,
           createdAt: '2026-06-13T20:00:01.000Z',
         };
         mockState = {
           ...mockState,
+          artifacts,
           agentMessages: [studentMessage, assistantMessage],
         };
         return jsonResponse({ reply: assistantMessage, state: mockState });
@@ -242,6 +300,40 @@ describe('THREAD app shell', () => {
     );
   });
 
+  it('offers five guided demo moments from the mobile agent surface', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /urgent care\?/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /parent text/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /lab ta/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add acute depth/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /tonight plan/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /add acute depth/i }));
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/agent/messages',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ text: 'Add the acute illness module. What changes?' }),
+      }),
+    );
+  });
+
+  it('shows agent-created artifacts on the default mobile surface', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /action queue/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /urgent care\?/i }));
+
+    expect(await screen.findByRole('heading', { name: /agent outputs/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /urgent care note/i })).toBeInTheDocument();
+    expect(screen.getByText(/prepared the urgent care note/i)).toBeInTheDocument();
+  });
+
   it('shows the agent checking context while a reply is in flight', async () => {
     const user = userEvent.setup();
     const agentResponse = createDeferred<Response>();
@@ -313,7 +405,7 @@ describe('THREAD app shell', () => {
       '/api/agent/messages',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ text: 'Draft a parent-safe update that reassures without sharing private details.' }),
+        body: JSON.stringify({ text: 'What do I tell my mom without giving her everything?' }),
       }),
     );
   });

@@ -443,11 +443,41 @@ const priorityWeight = {
   low: 3,
 };
 
+export const demoMoments = [
+  {
+    id: 'urgent-care',
+    label: 'Urgent care?',
+    prompt: 'Do I need urgent care tonight? Prepare what I should tell them.',
+  },
+  {
+    id: 'parent-update',
+    label: 'Parent text',
+    prompt: 'What do I tell my mom without giving her everything?',
+  },
+  {
+    id: 'lab-ta-message',
+    label: 'Lab TA',
+    prompt: 'What should I say to my lab TA if I miss lab?',
+  },
+  {
+    id: 'add-acute-module',
+    label: 'Add acute depth',
+    prompt: 'Add the acute illness module. What changes?',
+  },
+  {
+    id: 'tonight-plan',
+    label: 'Tonight plan',
+    prompt: 'Make me a plan for tonight.',
+  },
+];
+
 function createSeedState() {
   return {
     profile: structuredClone(seedProfile),
     completedActionIds: [],
     activatedModuleIds: [],
+    customActions: [],
+    artifacts: [],
     agentMessages: [],
     events: [],
   };
@@ -478,12 +508,14 @@ function normalizeState(state) {
     },
     completedActionIds: state.completedActionIds ?? [],
     activatedModuleIds: state.activatedModuleIds ?? [],
+    customActions: state.customActions ?? [],
+    artifacts: state.artifacts ?? [],
     agentMessages: state.agentMessages ?? [],
     events: state.events ?? [],
   };
 }
 
-function createActionQueue(profile, completedActionIds, activatedModuleIds = []) {
+function createActionQueue(profile, completedActionIds, activatedModuleIds = [], customActions = []) {
   const actions = [];
   const activeDepth = new Set(activatedModuleIds);
   const signalIds = new Set(profile.signals.map((signal) => signal.id));
@@ -641,6 +673,8 @@ function createActionQueue(profile, completedActionIds, activatedModuleIds = [])
     });
   }
 
+  actions.push(...customActions);
+
   return actions
     .sort((a, b) => priorityWeight[a.priority] - priorityWeight[b.priority])
     .map((action) => ({ ...action, completed: completedActionIds.includes(action.id) }));
@@ -711,9 +745,12 @@ function buildCanaryState(state) {
   const activeModuleIds = Array.from(new Set([...defaultActiveModuleIds, ...state.activatedModuleIds]));
   return {
     profile: state.profile,
-    actions: createActionQueue(state.profile, state.completedActionIds, state.activatedModuleIds),
+    actions: createActionQueue(state.profile, state.completedActionIds, state.activatedModuleIds, state.customActions),
     completedActionIds: state.completedActionIds,
     activatedModuleIds: state.activatedModuleIds,
+    customActions: state.customActions,
+    artifacts: state.artifacts,
+    demoMoments,
     activeModules: moduleRegistry.filter((module) => activeModuleIds.includes(module.id)),
     recommendedModules: recommendModules(state.profile, state.activatedModuleIds),
     weeklySummary: summarizeWeek(state.profile, state.completedActionIds),
@@ -736,6 +773,9 @@ function buildAgentResponderContext(state) {
       recommended,
     })),
     weeklySummary: canaryState.weeklySummary,
+    artifacts: canaryState.artifacts,
+    customActions: canaryState.customActions,
+    demoMoments,
     recentMessages: state.agentMessages.slice(-8),
   };
 }
@@ -753,6 +793,9 @@ function createAgentMessage(state, role, text, metadata = {}) {
   }
   if (metadata.model) {
     message.model = metadata.model;
+  }
+  if (metadata.toolCalls?.length) {
+    message.toolCalls = metadata.toolCalls;
   }
 
   return message;
@@ -787,9 +830,298 @@ function hasAnyPhrase(text, phrases) {
   return phrases.some((phrase) => text.includes(phrase));
 }
 
-function buildAgentReply(state, text) {
+function upsertArtifact(state, artifact) {
+  const existing = state.artifacts.find((item) => item.id === artifact.id);
+  const nextArtifact = {
+    ...artifact,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existing) {
+    Object.assign(existing, nextArtifact);
+    return existing;
+  }
+
+  const created = {
+    ...nextArtifact,
+    createdAt: nextArtifact.updatedAt,
+  };
+  state.artifacts.push(created);
+  return created;
+}
+
+function ensureDocument(state, document) {
+  const existingDocument = state.profile.documents.find((item) => item.title === document.title && item.kind === document.kind);
+  if (existingDocument) {
+    existingDocument.status = document.status;
+    return existingDocument;
+  }
+
+  const nextDocument = {
+    id: document.id ?? `doc-${Date.now()}`,
+    ...document,
+  };
+  state.profile.documents.push(nextDocument);
+  return nextDocument;
+}
+
+function ensureMemory(state, text) {
+  if (!state.profile.memory.includes(text)) {
+    state.profile.memory.push(text);
+  }
+}
+
+function ensureModuleActive(state, moduleId) {
+  if (!state.activatedModuleIds.includes(moduleId)) {
+    state.activatedModuleIds.push(moduleId);
+    appendEvent(state, 'module.activated', { moduleId, source: 'agent_tool' });
+  }
+}
+
+function ensureCustomAction(state, action) {
+  const existing = state.customActions.find((item) => item.id === action.id);
+  if (existing) {
+    Object.assign(existing, action);
+    return existing;
+  }
+  state.customActions.push(action);
+  return action;
+}
+
+function ensureCompletedAction(state, actionId) {
+  const availableActions = createActionQueue(state.profile, state.completedActionIds, state.activatedModuleIds, state.customActions);
+  const action = availableActions.find((item) => item.id === actionId);
+  if (!action) {
+    return false;
+  }
+  if (!state.completedActionIds.includes(actionId)) {
+    state.completedActionIds.push(actionId);
+  }
+  return true;
+}
+
+function appendToolCall(toolCalls, toolCall) {
+  toolCalls.push({
+    status: 'done',
+    ...toolCall,
+  });
+}
+
+function createUrgentCareNote(profile) {
+  const meds = profile.healthProfile.currentMedications
+    .map((medication) => `${medication.name} ${medication.dose} (${medication.schedule})`)
+    .join('; ');
+  return [
+    'Urgent care triage note:',
+    profile.healthProfile.currentConcern.summary,
+    `Meds: ${meds}.`,
+    `Allergy: ${profile.healthProfile.allergies.join(', ')}.`,
+    `Red flags: ${profile.healthProfile.currentConcern.redFlags.join('; ')}.`,
+    `School conflicts: ${profile.academicCalendar.map((event) => event.title).join(', ')}.`,
+    'Ask what symptoms should trigger urgent or emergency care and whether lab or soccer should be limited this week.',
+  ].join(' ');
+}
+
+function createSharePacket(profile) {
+  return [
+    'Share only with urgent care tonight:',
+    profile.healthProfile.currentConcern.summary,
+    `Medication list: ${profile.healthProfile.currentMedications.map((medication) => `${medication.name} ${medication.dose}`).join(', ')}.`,
+    `Allergy: ${profile.healthProfile.allergies.join(', ')}.`,
+    'Keep parent update separate unless Alex chooses to send it.',
+  ].join(' ');
+}
+
+function runAgentTools(state, text) {
   const normalized = text.toLowerCase();
-  const actions = createActionQueue(state.profile, state.completedActionIds, state.activatedModuleIds);
+  const toolCalls = [];
+  const mentionsParent = hasAnyWord(normalized, ['parent', 'parents', 'mom', 'dad', 'mother', 'father']);
+  const asksUrgentCare =
+    hasAnyPhrase(normalized, ['urgent care']) ||
+    hasAnyPhrase(normalized, ['do i need urgent']) ||
+    hasAnyPhrase(normalized, ['tell them']) ||
+    hasAnyPhrase(normalized, ['triage']);
+  const asksAcuteModule =
+    hasAnyWord(normalized, ['acute']) &&
+    (hasAnyWord(normalized, ['add', 'activate', 'module', 'depth']) || hasAnyPhrase(normalized, ['what changes']));
+  const asksParentArtifact =
+    mentionsParent &&
+    (hasAnyWord(normalized, ['tell', 'draft', 'send', 'text', 'message', 'update', 'calm', 'reassure']) ||
+      hasAnyPhrase(normalized, ['without giving']));
+  const asksSchoolMessage =
+    hasAnyPhrase(normalized, ['lab ta']) ||
+    hasAnyPhrase(normalized, ['professor']) ||
+    hasAnyPhrase(normalized, ['miss lab']) ||
+    hasAnyPhrase(normalized, ['miss class']);
+  const asksTonightPlan =
+    hasAnyPhrase(normalized, ['plan for tonight']) ||
+    hasAnyPhrase(normalized, ['plan tonight']) ||
+    hasAnyPhrase(normalized, ['make me a plan']) ||
+    hasAnyPhrase(normalized, ['tonight plan']);
+  const marksRefillDone =
+    hasAnyWord(normalized, ['mark', 'done', 'completed', 'finish', 'finished']) &&
+    hasAnyWord(normalized, ['refill', 'medication', 'meds', 'prescription']);
+
+  if (asksAcuteModule) {
+    ensureModuleActive(state, 'acute-illness-injury');
+    ensureMemory(state, 'Acute Illness / Injury depth is active for the Week 7 cough, fever, and chest tightness episode.');
+    appendToolCall(toolCalls, {
+      name: 'activate_module',
+      label: 'Activated Acute Illness / Injury',
+      targetId: 'acute-illness-injury',
+    });
+  }
+
+  if (asksUrgentCare) {
+    const visitNote = upsertArtifact(state, {
+      id: 'urgent-care-visit-note',
+      kind: 'visit_note',
+      title: 'Urgent care note',
+      audience: 'urgent care triage',
+      consent: 'student-controlled',
+      body: createUrgentCareNote(state.profile),
+    });
+    const sharePacket = upsertArtifact(state, {
+      id: 'urgent-care-share-packet',
+      kind: 'share_packet',
+      title: 'Urgent care share packet',
+      audience: 'urgent care triage',
+      consent: 'student-controlled',
+      body: createSharePacket(state.profile),
+    });
+    ensureDocument(state, {
+      id: 'urgent-care-note',
+      title: 'Urgent care note',
+      kind: 'Visit note',
+      status: 'Prepared by agent',
+    });
+    appendToolCall(toolCalls, {
+      name: 'prepare_urgent_care_note',
+      label: 'Prepared urgent care note',
+      artifactId: visitNote.id,
+    });
+    appendToolCall(toolCalls, {
+      name: 'build_share_packet',
+      label: 'Built student-controlled share packet',
+      artifactId: sharePacket.id,
+    });
+    appendToolCall(toolCalls, {
+      name: 'add_document',
+      label: 'Added urgent care note to Vault',
+      targetId: 'urgent-care-note',
+    });
+  }
+
+  if (asksParentArtifact) {
+    const parentUpdate = upsertArtifact(state, {
+      id: 'parent-safe-update',
+      kind: 'parent_update',
+      title: 'Parent-safe update',
+      audience: 'parents',
+      consent: 'student-controlled',
+      body:
+        'I am okay enough to handle tonight. It is a heavy week, but I have a plan: care decision first, refill next, sleep by 11:30. I will tell you if I need help. Please do not call around.',
+    });
+    appendToolCall(toolCalls, {
+      name: 'draft_parent_update',
+      label: 'Drafted parent-safe update',
+      artifactId: parentUpdate.id,
+    });
+  }
+
+  if (asksSchoolMessage) {
+    const schoolMessage = upsertArtifact(state, {
+      id: 'lab-ta-message',
+      kind: 'school_message',
+      title: 'Lab TA message',
+      audience: 'CHEM 101 lab TA',
+      consent: 'student-controlled',
+      body:
+        'Hi, I am dealing with a same-day health issue and may need to miss lab so I can get care first. I will follow up as soon as I know whether I can attend and ask what I should do to stay current.',
+    });
+    appendToolCall(toolCalls, {
+      name: 'draft_school_message',
+      label: 'Drafted lab TA message',
+      artifactId: schoolMessage.id,
+    });
+  }
+
+  if (asksTonightPlan) {
+    const plan = upsertArtifact(state, {
+      id: 'tonight-plan',
+      kind: 'plan',
+      title: 'Tonight plan',
+      audience: 'Alex',
+      consent: 'private',
+      body:
+        '1. Make the symptom care decision. 2. Send the refill note. 3. Eat something simple before studying. 4. Do one 45-minute biology block. 5. Stop by 11:30 PM.',
+    });
+    for (const action of [
+      {
+        id: 'tonight-urgent-care-note',
+        title: 'Use urgent care note if symptoms continue',
+        detail: 'Open the prepared note and bring the medication list, allergy, insurance card front, and symptom timeline.',
+        priority: 'urgent',
+        moduleId: 'care-navigation',
+        eta: 'Tonight',
+      },
+      {
+        id: 'tonight-refill-message',
+        title: 'Send refill message',
+        detail: 'Use the short refill request before the Friday gap becomes a midterm problem.',
+        priority: 'high',
+        moduleId: 'medication-management',
+        eta: 'Tonight',
+      },
+      {
+        id: 'tonight-sleep-window',
+        title: 'Protect 11:30 PM sleep window',
+        detail: 'Stop after one bio block so illness, refill, and midterms do not compound tomorrow.',
+        priority: 'high',
+        moduleId: 'sleep-burnout-academic-load',
+        eta: 'Tonight',
+      },
+    ]) {
+      ensureCustomAction(state, action);
+      appendToolCall(toolCalls, {
+        name: 'create_task',
+        label: `Created task: ${action.title}`,
+        targetId: action.id,
+      });
+    }
+    appendToolCall(toolCalls, {
+      name: 'draft_tonight_plan',
+      label: 'Drafted tonight plan',
+      artifactId: plan.id,
+    });
+  }
+
+  if (marksRefillDone && ensureCompletedAction(state, 'refill-stimulant')) {
+    appendToolCall(toolCalls, {
+      name: 'mark_action_done',
+      label: 'Marked refill task done',
+      targetId: 'refill-stimulant',
+    });
+  }
+
+  for (const toolCall of toolCalls) {
+    appendEvent(state, 'agent.tool', toolCall);
+  }
+
+  return toolCalls;
+}
+
+function summarizeToolCalls(toolCalls) {
+  if (!toolCalls.length) {
+    return '';
+  }
+
+  return `Done: ${toolCalls.map((toolCall) => toolCall.label).join('; ')}.`;
+}
+
+function buildAgentReply(state, text, toolCalls = []) {
+  const normalized = text.toLowerCase();
+  const actions = createActionQueue(state.profile, state.completedActionIds, state.activatedModuleIds, state.customActions);
   const urgentAction = actions.find((action) => action.priority === 'urgent' && !action.completed);
   const refillAction = actions.find((action) => action.id === 'refill-stimulant' && !action.completed);
   const sleepAction = actions.find((action) => action.id === 'restart-academic-load' && !action.completed);
@@ -818,13 +1150,50 @@ function buildAgentReply(state, text) {
   const asksForVisitPrep = hasAnyWord(normalized, ['visit']) || hasAnyPhrase(normalized, ['care prep']);
   const mentionsSymptoms = hasAnyWord(normalized, ['chest', 'fever', 'symptom', 'symptoms']) || hasAnyPhrase(normalized, ['feels weird']);
   const mentionsRefill = hasAnyWord(normalized, ['refill', 'meds', 'medication', 'pharmacy', 'prescription']);
+  const toolSummary = summarizeToolCalls(toolCalls);
+
+  if (toolCalls.some((toolCall) => toolCall.name === 'activate_module')) {
+    return [
+      'Acute Illness / Injury is on now.',
+      'What changes: I can track the symptom timeline, prep the visit note, add follow-up tasks, and connect class or soccer limits to the care decision.',
+      'The action queue now has deeper visit-prep work instead of only a general care-navigation reminder.',
+      toolSummary,
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  if (toolCalls.some((toolCall) => toolCall.name === 'prepare_urgent_care_note')) {
+    return [
+      'I prepared the urgent care note and share packet.',
+      'Tell them: cough after the weekend, fever and chest tightness worse since yesterday, higher resting heart rate, remote bronchospasm history, meds list, and amoxicillin rash history.',
+      'Use emergency care now if breathing, chest pain, fainting, blue or gray lips, or rapid worsening show up.',
+      toolSummary,
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  if (toolCalls.some((toolCall) => toolCall.name === 'draft_school_message')) {
+    return [
+      'I can help with that.',
+      'I drafted the lab TA message and kept it logistics-only.',
+      'It says you may need to miss lab for a same-day health issue and asks what to do to stay current.',
+      toolSummary,
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
 
   if (wantsParentDraft) {
     return [
       'Send this:',
       '"I am okay enough to handle tonight. It is a heavy week, but I have a plan: care decision first, refill next, sleep by 11:30. I will tell you if I need help. Please don\'t call around."',
       'It calms them down without handing over symptoms, medication details, or records.',
-    ].join(' ');
+      toolSummary,
+    ]
+      .filter(Boolean)
+      .join(' ');
   }
 
   if (soundsOverwhelmed) {
@@ -845,7 +1214,10 @@ function buildAgentReply(state, text) {
       '4. Do one 45-minute bio block.',
       '5. Stop at 11:30 PM.',
       'I can turn this into reminders.',
-    ].join(' ');
+      toolSummary,
+    ]
+      .filter(Boolean)
+      .join(' ');
   }
 
   if (asksForVisitPrep) {
@@ -853,7 +1225,10 @@ function buildAgentReply(state, text) {
       'I can make this easier to say out loud.',
       'Visit note: symptoms changed after the weekend cough, chest tightness and fever are worse since yesterday, current meds include stimulant medication, refill timing matters this week, and insurance card status may need checking.',
       'Ask the clinician: what care level is right, what red flags should trigger urgent or emergency care, and what class or activity limits matter this week.',
-    ].join(' ');
+      toolSummary,
+    ]
+      .filter(Boolean)
+      .join(' ');
   }
 
   if (mentionsSymptoms) {
@@ -947,7 +1322,7 @@ export async function createCanaryStore(options = {}) {
     },
 
     async completeAction(actionId) {
-      const action = createActionQueue(state.profile, state.completedActionIds, state.activatedModuleIds).find(
+      const action = createActionQueue(state.profile, state.completedActionIds, state.activatedModuleIds, state.customActions).find(
         (item) => item.id === actionId,
       );
       if (!action) {
@@ -1026,6 +1401,7 @@ export async function createCanaryStore(options = {}) {
 
       const studentMessage = createAgentMessage(state, 'student', normalized);
       state.agentMessages.push(studentMessage);
+      const toolCalls = runAgentTools(state, normalized);
 
       let responderReply = { text: '', source: 'fallback' };
       if (agentResponder) {
@@ -1043,10 +1419,12 @@ export async function createCanaryStore(options = {}) {
       const assistantMessage = createAgentMessage(
         state,
         'assistant',
-        responderReply.text || buildAgentReply(state, normalized),
         responderReply.text
-          ? { source: responderReply.source, model: responderReply.model }
-          : { source: 'fallback' },
+          ? [responderReply.text, summarizeToolCalls(toolCalls)].filter(Boolean).join('\n\n')
+          : buildAgentReply(state, normalized, toolCalls),
+        responderReply.text
+          ? { source: responderReply.source, model: responderReply.model, toolCalls }
+          : { source: 'fallback', toolCalls },
       );
       state.agentMessages.push(assistantMessage);
       appendEvent(state, 'agent.message', {

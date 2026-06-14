@@ -12,6 +12,7 @@ import {
 import { AgentPanel } from './components/AgentPanel';
 import { ActionQueue } from './components/ActionQueue';
 import { AnalyticsPanel } from './components/AnalyticsPanel';
+import { ArtifactShelf } from './components/ArtifactShelf';
 import { DataVault } from './components/DataVault';
 import { LifeAuditPanel } from './components/LifeAuditPanel';
 import { MemoryProfile } from './components/MemoryProfile';
@@ -173,9 +174,11 @@ export default function App() {
           <AgentPanel
             studentName={canaryState?.profile.name}
             messages={canaryState?.agentMessages ?? []}
+            demoMoments={canaryState?.demoMoments}
             isSending={isSendingAgent}
             onSendMessage={canaryState ? sendAgentMessage : undefined}
           />
+          {canaryState ? <ArtifactShelf artifacts={canaryState.artifacts} /> : null}
           {loadError ? (
             <section className="panel" role="alert">
               <h2>Canary offline</h2>

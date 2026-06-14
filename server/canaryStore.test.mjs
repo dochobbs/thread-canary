@@ -39,6 +39,15 @@ describe('canary store', () => {
     expect(state.profile.careTimeline.map((event) => event.id)).toContain('weekend-cough');
     expect(state.profile.wearableSummary.sleep).toContain('5h 42m');
     expect(state.profile.academicCalendar.map((event) => event.title)).toContain('BIO 111 practical');
+    expect(state.demoMoments.map((moment) => moment.id)).toEqual([
+      'urgent-care',
+      'parent-update',
+      'lab-ta-message',
+      'add-acute-module',
+      'tonight-plan',
+    ]);
+    expect(state.artifacts).toEqual([]);
+    expect(state.customActions).toEqual([]);
     expect(state.profile.activeModuleIds).toContain('care-navigation');
     expect(state.profile.availableModuleIds).toHaveLength(10);
     expect(state.profile.availableModuleIds).toContain('nutrition-patterns');
@@ -125,6 +134,115 @@ describe('canary store', () => {
       expect.objectContaining({ role: 'assistant', text: expect.stringContaining('care level') }),
     ]);
     expect(persisted.agentMessages).toHaveLength(2);
+  });
+
+  it('uses agent tools to create an urgent-care note and student-controlled share packet', async () => {
+    const { store } = await createTempStore();
+
+    const result = await store.sendAgentMessage('Do I need urgent care tonight? Prepare what I should tell them.');
+
+    expect(result.reply.toolCalls.map((tool) => tool.name)).toEqual(
+      expect.arrayContaining(['prepare_urgent_care_note', 'build_share_packet', 'add_document']),
+    );
+    expect(result.state.artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'urgent-care-visit-note',
+          kind: 'visit_note',
+          title: 'Urgent care note',
+          body: expect.stringContaining('lisdexamfetamine 30 mg'),
+        }),
+        expect.objectContaining({
+          id: 'urgent-care-share-packet',
+          kind: 'share_packet',
+          title: 'Urgent care share packet',
+          consent: 'student-controlled',
+        }),
+      ]),
+    );
+    expect(result.state.profile.documents).toEqual(
+      expect.arrayContaining([expect.objectContaining({ title: 'Urgent care note', kind: 'Visit note' })]),
+    );
+  });
+
+  it('uses agent tools to activate module depth from chat and change the action queue', async () => {
+    const { store } = await createTempStore();
+
+    const result = await store.sendAgentMessage('Add the acute illness module. What changes?');
+
+    expect(result.reply.toolCalls).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'activate_module', targetId: 'acute-illness-injury' })]),
+    );
+    expect(result.state.activatedModuleIds).toContain('acute-illness-injury');
+    expect(result.state.actions.map((action) => action.id)).toContain('acute-symptom-visit-prep');
+    expect(result.reply.text).toContain('Acute Illness / Injury');
+  });
+
+  it('uses agent tools to create a parent-safe artifact without exposing private details', async () => {
+    const { store } = await createTempStore();
+
+    const result = await store.sendAgentMessage('What do I tell my mom without giving her everything?');
+    const parentArtifact = result.state.artifacts.find((artifact) => artifact.id === 'parent-safe-update');
+
+    expect(result.reply.toolCalls.map((tool) => tool.name)).toContain('draft_parent_update');
+    expect(parentArtifact).toMatchObject({
+      kind: 'parent_update',
+      title: 'Parent-safe update',
+      audience: 'parents',
+      consent: 'student-controlled',
+    });
+    expect(parentArtifact.body).toContain('I am okay enough to handle tonight');
+    expect(parentArtifact.body).not.toContain('lisdexamfetamine');
+    expect(parentArtifact.body).not.toContain('amoxicillin');
+  });
+
+  it('uses agent tools to draft a lab TA message as a reusable artifact', async () => {
+    const { store } = await createTempStore();
+
+    const result = await store.sendAgentMessage('What should I say to my lab TA if I miss lab?');
+
+    expect(result.reply.toolCalls.map((tool) => tool.name)).toContain('draft_school_message');
+    expect(result.state.artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'lab-ta-message',
+          kind: 'school_message',
+          title: 'Lab TA message',
+          audience: 'CHEM 101 lab TA',
+        }),
+      ]),
+    );
+  });
+
+  it('uses agent tools to create a tonight plan with actionable tasks', async () => {
+    const { store } = await createTempStore();
+
+    const result = await store.sendAgentMessage('Make me a plan for tonight.');
+
+    expect(result.reply.toolCalls.map((tool) => tool.name)).toEqual(
+      expect.arrayContaining(['create_task', 'draft_tonight_plan']),
+    );
+    expect(result.state.customActions.map((action) => action.id)).toEqual(
+      expect.arrayContaining(['tonight-urgent-care-note', 'tonight-refill-message', 'tonight-sleep-window']),
+    );
+    expect(result.state.actions.map((action) => action.id)).toEqual(
+      expect.arrayContaining(['tonight-urgent-care-note', 'tonight-refill-message', 'tonight-sleep-window']),
+    );
+    expect(result.state.artifacts).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'tonight-plan', kind: 'plan' })]),
+    );
+  });
+
+  it('uses agent tools to mark actions done from chat', async () => {
+    const { store } = await createTempStore();
+
+    const result = await store.sendAgentMessage('Mark the medication refill done.');
+
+    expect(result.reply.toolCalls).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'mark_action_done', targetId: 'refill-stimulant' })]),
+    );
+    expect(result.state.completedActionIds).toContain('refill-stimulant');
+    expect(result.state.actions.find((action) => action.id === 'refill-stimulant')).toMatchObject({ completed: true });
   });
 
   it('routes arbitrary questions through a general agent responder with student context', async () => {

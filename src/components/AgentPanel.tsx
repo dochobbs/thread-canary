@@ -1,10 +1,20 @@
 import { FormEvent, useState } from 'react';
-import { CalendarCheck, ClipboardList, Pill, Send, ShieldCheck, type LucideIcon } from 'lucide-react';
-import type { AgentMessage } from '../api/client';
+import {
+  CalendarCheck,
+  CircleAlert,
+  ClipboardList,
+  FlaskConical,
+  Plus,
+  Send,
+  ShieldCheck,
+  type LucideIcon,
+} from 'lucide-react';
+import type { AgentMessage, DemoMoment } from '../api/client';
 
 interface AgentPanelProps {
   studentName?: string;
   messages?: AgentMessage[];
+  demoMoments?: DemoMoment[];
   isSending?: boolean;
   onSendMessage?: (text: string) => Promise<void> | void;
 }
@@ -15,34 +25,61 @@ const defaultInsights = [
   'Bio practical and chem midterm stack this week',
 ];
 
-const agentTools: Array<{ label: string; ariaLabel: string; prompt: string; Icon: LucideIcon }> = [
+const fallbackDemoMoments: DemoMoment[] = [
   {
-    label: 'Plan tonight',
-    ariaLabel: 'Plan tonight',
-    prompt: 'Plan tonight around symptoms, refill, sleep, and midterms.',
-    Icon: CalendarCheck,
+    id: 'urgent-care',
+    label: 'Urgent care?',
+    prompt: 'Do I need urgent care tonight? Prepare what I should tell them.',
   },
   {
-    label: 'Prep visit',
-    ariaLabel: 'Prep care visit',
-    prompt: 'Prep a care visit with a symptom history and what to ask.',
-    Icon: ClipboardList,
+    id: 'parent-update',
+    label: 'Parent text',
+    prompt: 'What do I tell my mom without giving her everything?',
   },
   {
-    label: 'Start refill',
-    ariaLabel: 'Start medication refill',
-    prompt: 'Start the medication refill and draft what I should send.',
-    Icon: Pill,
+    id: 'lab-ta-message',
+    label: 'Lab TA',
+    prompt: 'What should I say to my lab TA if I miss lab?',
   },
   {
-    label: 'Parent update',
-    ariaLabel: 'Draft parent-safe update',
-    prompt: 'Draft a parent-safe update that reassures without sharing private details.',
-    Icon: ShieldCheck,
+    id: 'add-acute-module',
+    label: 'Add acute depth',
+    prompt: 'Add the acute illness module. What changes?',
+  },
+  {
+    id: 'tonight-plan',
+    label: 'Tonight plan',
+    prompt: 'Make me a plan for tonight.',
   },
 ];
 
-export function AgentPanel({ studentName = 'Alex Rivera', messages = [], isSending = false, onSendMessage }: AgentPanelProps) {
+const momentIcons: Record<string, LucideIcon> = {
+  'urgent-care': CircleAlert,
+  'parent-update': ShieldCheck,
+  'lab-ta-message': ClipboardList,
+  'add-acute-module': Plus,
+  'tonight-plan': CalendarCheck,
+};
+
+function momentAriaLabel(moment: DemoMoment) {
+  if (moment.id === 'parent-update') {
+    return `${moment.label}, draft parent-safe update`;
+  }
+
+  if (moment.id === 'lab-ta-message') {
+    return `${moment.label}, draft lab TA message`;
+  }
+
+  return moment.label;
+}
+
+export function AgentPanel({
+  studentName = 'Alex Rivera',
+  messages = [],
+  demoMoments = fallbackDemoMoments,
+  isSending = false,
+  onSendMessage,
+}: AgentPanelProps) {
   const [draft, setDraft] = useState('');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -109,19 +146,22 @@ export function AgentPanel({ studentName = 'Alex Rivera', messages = [], isSendi
           </article>
         ) : null}
       </div>
-      <div className="agent-tools" aria-label="Agent tools">
-        {agentTools.map(({ label, ariaLabel, prompt, Icon }) => (
+      <div className="agent-tools" aria-label="Demo moments">
+        {demoMoments.map((moment) => {
+          const Icon = momentIcons[moment.id] ?? FlaskConical;
+          return (
           <button
             type="button"
-            key={label}
-            aria-label={ariaLabel}
-            onClick={() => runTool(prompt)}
+            key={moment.id}
+            aria-label={momentAriaLabel(moment)}
+            onClick={() => runTool(moment.prompt)}
             disabled={!onSendMessage || isSending}
           >
             <Icon aria-hidden="true" />
-            <span>{label}</span>
+            <span>{moment.label}</span>
           </button>
-        ))}
+          );
+        })}
       </div>
       <form className="agent-compose" onSubmit={handleSubmit}>
         <label htmlFor="agent-message">Message agent</label>

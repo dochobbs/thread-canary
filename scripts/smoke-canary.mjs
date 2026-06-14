@@ -63,6 +63,12 @@ async function main() {
     state.profile?.careTimeline?.some((event) => event.id === 'weekend-cough'),
     'Canary state did not include the demo care timeline.',
   );
+  assert(
+    state.demoMoments?.map((moment) => moment.id).join(',') ===
+      'urgent-care,parent-update,lab-ta-message,add-acute-module,tonight-plan',
+    'Canary state did not include the five guided demo moments.',
+  );
+  assert(Array.isArray(state.artifacts), 'Canary state did not include agent artifacts.');
   assert(Array.isArray(state.actions) && state.actions.length > 0, 'Canary state did not include agent actions.');
 
   const completedState = await request('/api/actions/care-red-flag/complete', { method: 'POST' });
@@ -110,6 +116,24 @@ async function main() {
       'Fallback symptom reply did not return a state-grounded care-level reply.',
     );
   }
+
+  const urgentToolPayload = await request('/api/agent/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text: 'Do I need urgent care tonight? Prepare what I should tell them.' }),
+  });
+  assertAgentReply(urgentToolPayload, 'Urgent-care tool agent message');
+  assert(
+    urgentToolPayload.reply?.toolCalls?.some((tool) => tool.name === 'prepare_urgent_care_note'),
+    'Urgent-care demo prompt did not run the visit-note tool.',
+  );
+  assert(
+    urgentToolPayload.state?.artifacts?.some((artifact) => artifact.id === 'urgent-care-visit-note'),
+    'Urgent-care demo prompt did not create a visit-note artifact.',
+  );
+  assert(
+    urgentToolPayload.state?.artifacts?.some((artifact) => artifact.id === 'urgent-care-share-packet'),
+    'Urgent-care demo prompt did not create a share-packet artifact.',
+  );
 
   const parentPayload = await request('/api/agent/messages', {
     method: 'POST',

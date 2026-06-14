@@ -388,6 +388,34 @@ p {
   height: 16px;
 }
 
+.artifact-list {
+  display: grid;
+  gap: 10px;
+}
+
+.artifact-list article {
+  border-left: 3px solid var(--seafoam);
+  padding: 0 0 0 12px;
+}
+
+.artifact-list span {
+  color: var(--quiet-ivory);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.artifact-list h3 {
+  margin-top: 5px;
+}
+
+.artifact-list p {
+  margin: 6px 0 0;
+  color: var(--muted-ivory);
+  font-size: 0.86rem;
+}
+
 .agent-compose {
   display: grid;
   gap: 8px;

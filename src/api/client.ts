@@ -13,7 +13,33 @@ export interface AgentMessage {
   text: string;
   source?: 'llm' | 'fallback';
   model?: string;
+  toolCalls?: AgentToolCall[];
   createdAt: string;
+}
+
+export interface AgentToolCall {
+  name: string;
+  label: string;
+  status: 'done';
+  targetId?: string;
+  artifactId?: string;
+}
+
+export interface AgentArtifact {
+  id: string;
+  kind: string;
+  title: string;
+  audience: string;
+  consent: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DemoMoment {
+  id: string;
+  label: string;
+  prompt: string;
 }
 
 export interface CanaryState {
@@ -21,6 +47,9 @@ export interface CanaryState {
   actions: AgentAction[];
   completedActionIds: string[];
   activatedModuleIds: string[];
+  customActions: AgentAction[];
+  artifacts: AgentArtifact[];
+  demoMoments: DemoMoment[];
   activeModules: DeepModule[];
   recommendedModules: DeepModule[];
   weeklySummary: WeeklySummary;
