@@ -3,7 +3,7 @@
 // Uses client_credentials flow (no user login needed).
 // Provides search, curated playlists, and mood-based recommendations.
 
-const TOKEN_URL = "https://accounts.spotify.com/api/token";
+const TOKEN_URL="https://accounts.spotify.com/api/token";
 const API_BASE = "https://api.spotify.com/v1";
 
 let cachedToken = null;
