@@ -248,8 +248,23 @@ async function handleIncomingMessage(payload) {
   // 6. Split and send
   const parts = splitReply(reply);
 
+  let useSms = false;
+
   for (let i = 0; i < parts.length; i++) {
     const isLast = i === parts.length - 1;
+
+    if (useSms) {
+      // SMS fallback — send as single text to the remote number
+      try {
+        await identity.sendText({ to: remoteNumber, text: parts[i] });
+        console.log(`  📱 SMS sent (part ${i + 1})`);
+        if (!isLast) await sleep(1000);
+      } catch (smsErr) {
+        console.error(`  ❌ SMS also failed (part ${i + 1}):`, smsErr.message);
+      }
+      continue;
+    }
+
     const opts = { conversationId, text: parts[i] };
     if (isLast && sendStyle) opts.sendStyle = sendStyle;
 
@@ -261,11 +276,21 @@ async function handleIncomingMessage(payload) {
         await sleep(400);
       }
     } catch (e) {
-      console.error(`  ❌ Send failed (part ${i + 1}):`, e.message);
+      console.error(`  ❌ iMessage send failed (part ${i + 1}):`, e.message);
+      if (e.message && e.message.includes("429")) {
+        console.log("  📱 Falling back to SMS...");
+        useSms = true;
+        try {
+          await identity.sendText({ to: remoteNumber, text: parts[i] });
+          console.log(`  📱 SMS sent (part ${i + 1})`);
+        } catch (smsErr) {
+          console.error(`  ❌ SMS also failed (part ${i + 1}):`, smsErr.message);
+        }
+      }
     }
   }
 
-  console.log("  ✅ Response sent");
+  console.log(useSms ? "  ✅ Response sent (via SMS fallback)" : "  ✅ Response sent");
 }
 
 function splitReply(text) {
