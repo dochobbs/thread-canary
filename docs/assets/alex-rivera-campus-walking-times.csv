@@ -1,0 +1,14 @@
+route_id,from,to,walking_minutes,after_hours_note,why_thread_cares
+dorm-to-bio,Hawthorne Hall,Darwin Hall,9,Well-lit main quad route,Needed for 09:10 biology after 08:00 stimulant routine.
+dorm-to-chem,Hawthorne Hall,Kepler Chemistry,13,Well-lit until central quad; quieter past STEM loading dock,Lab starts 11:00 and runs through lunch.
+chem-to-dining,Kepler Chemistry,West Commons Dining,7,Crowded at lunch but safe,Best fast food fallback after lab.
+chem-to-clinic,Kepler Chemistry,East Campus Clinic,8,Direct campus path,Useful if symptoms worsen during lab.
+dorm-to-clinic,Hawthorne Hall,East Campus Clinic,16,Use main quad route after dusk,Helps decide whether clinic is practical before closing.
+clinic-to-shuttle,East Campus Clinic,Shuttle Stop E,5,Safer than walking off campus after dark,Needed for urgent care routing after 18:00.
+shuttle-to-urgent-care,Shuttle Stop E,Riverbend Urgent Care,18,Shuttle or rideshare only; do not assume walkable,Relevant when Alex prefers urgent care after clinic closes.
+dorm-to-pharmacy,Hawthorne Hall,Campus Corner Pharmacy,12,Use central path and retail block lighting,Refill task and insurance card pickup.
+dorm-to-library,Hawthorne Hall,Carver Library,10,Well-lit; late-night escort available,Work-study shift and study recovery plan.
+dorm-to-rec-field,Hawthorne Hall,Mason Rec Field,11,Open field edge is darker after practice,Ankle soreness and late practice recovery.
+library-to-dining,Carver Library,West Commons Dining,6,Good route before evening shift,Food fallback before work-study.
+dorm-to-counseling,Hawthorne Hall,Counseling Center,14,Main quad route; avoid isolated north walk at night,Optional safety/support planning.
+dorm-to-campus-safety,Hawthorne Hall,Campus Safety Desk,12,Well-lit,Used for ride coordination if sick after hours.

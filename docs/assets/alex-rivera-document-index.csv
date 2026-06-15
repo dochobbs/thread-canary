@@ -1,0 +1,28 @@
+document_id,title,record_type,synthetic_date,source,status,sensitivity,why_thread_should_remember
+birth-summary,Birth and newborn discharge summary,medical record,2008-02-13,Cedar Falls Medical Center,captured,private health,Baseline history; no major neonatal complications recorded.
+well-child-5,Age 5 well-child visit,medical record,2013-03-04,Cedar Valley Pediatrics,captured,private health,Normal growth/development; early sleep sensitivity noted by parent.
+amoxicillin-rash,Amoxicillin rash note,allergy record,2011-05-18,Cedar Valley Pediatrics,captured,private health,Rash without breathing symptoms; preserve details so future clinicians can assess allergy history.
+bronchospasm-note,Exercise-induced bronchospasm history,medical record,2020-09-16,Cedar Valley Pediatrics,captured,private health,Relevant if cough/chest tightness returns during college.
+adhd-eval,Psychoeducational and ADHD evaluation,neurodevelopment record,2022-04-29,Cedar Falls School District,captured,highly private,Explains executive-function patterns and prior accommodations.
+504-plan-high-school,High school 504 plan,school record,2022-05-20,Cedar Falls High School,captured,private education,Supports continuity of accommodations if Alex asks disability office for help.
+adhd-med-continuity,ADHD medication continuity letter,pediatrician packet,2026-07-30,Cedar Valley Pediatrics,captured,private health,Refill timing stable dose history and prescriber continuity for college transition.
+migraine-care-plan,Migraine care plan,pediatrician packet,2026-07-30,Cedar Valley Pediatrics,captured,private health,Triggers rescue medication and when to seek care.
+immunization-record,College immunization record,immunization,2026-06-18,Cedar Valley Pediatrics,accepted by campus,private health,Campus compliance and future clinic visits.
+medical-history-addendum,Alex dated medical history addendum,medical record addendum,2026-10-15,THREAD synthetic data expansion,captured,private health,Dated encounters vaccine series relevant negatives family history and medication/allergy chronology for agent import.
+sports-clearance,Club sports clearance note,sports medical,2026-08-02,Cedar Valley Pediatrics,needs campus copy,private health,Club soccer participation and ankle recovery context.
+insurance-front,Insurance card front,insurance card,2026-08-19,student upload,captured,financial health,Needed for clinic/urgent care.
+insurance-back,Insurance card back,insurance card,2026-08-19,student upload,missing,financial health,Member services and copay phone number missing.
+rx-label-lisdexamfetamine,Stimulant prescription label,medication label,2026-10-09,student upload,captured,private health,Current medication name/dose/schedule and refill count.
+rx-label-sumatriptan,Migraine rescue medication label,medication label,2026-09-12,student upload,captured,private health,Rescue medication details; avoid inventing dosing.
+campus-health-intake,Northview Student Health intake form,campus form,2026-08-23,student portal,needs signature,private health,Could slow care if Alex goes to clinic.
+roommate-share-rule,Roommate logistics share rule,student preference,2026-08-28,life audit,captured,private preference,Jordan can know rides/meals not symptoms or medication unless Alex chooses.
+trusted-adult-rule,Aunt Lena contact rule,student preference,2026-08-28,life audit,captured,private preference,Trusted adult only after Alex opts in.
+chem-syllabus,CHEM 101 syllabus,academic record,2026-08-25,LMS,captured,education,Lab attendance and midterm dates affect illness planning.
+bio-syllabus,BIO 111 syllabus,academic record,2026-08-25,LMS,captured,education,Practical timing affects study/sleep plan.
+writing-syllabus,Writing seminar syllabus,academic record,2026-08-25,LMS,captured,education,Draft due Week 8 Friday; can ask for extension if needed.
+work-study-agreement,Library work-study agreement,employment record,2026-08-27,student employment,captured,financial,Coverage process and supervisor contact if sick.
+dining-balance,Dining dollars snapshot,financial record,2026-10-14,dining portal,needs refresh,financial,Food access issue on lab days.
+lab-fee-receipt,Chemistry lab fee receipt,receipt,2026-10-10,student upload,needs review,financial,Parent payment request can be logistics-only.
+ankle-note,Left ankle sprain care note,sports note,2026-09-22,student health,captured,private health,Practice load and recovery planning.
+urgent-care-prep,Acute cough and fever visit prep draft,agent artifact,2026-10-15,THREAD,prepared by agent,student controlled,Symptom timeline and questions if Alex seeks care tonight.
+parent-safe-update,Parent-safe update draft,agent artifact,2026-10-15,THREAD,prepared by agent,student controlled,Reassures parents without exposing symptoms/medications.

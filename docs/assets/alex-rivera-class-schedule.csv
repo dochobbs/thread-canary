@@ -1,0 +1,14 @@
+item_id,type,title,days,time,location,person_or_contact,agent_notes
+bio111-lecture,class,BIO 111 Foundations of Biology,Monday Wednesday Friday,09:10-10:00,Darwin Hall 204,Prof. Elena Cho,First class after stimulant dose; attendance matters for lab practical prep.
+chem101-lecture,class,CHEM 101 General Chemistry,Monday Wednesday Friday,11:15-12:05,Kepler Chemistry 118,Prof. Marcus Bell,Pairs with Wednesday recitation and Tuesday/Thursday lab workload.
+writing110-seminar,class,Writing Seminar: Science and Society,Tuesday Thursday,09:30-10:45,North Arts 212,Dr. Priya Nair,Friday Week 8 draft can be reduced to outline plus office-hours question if illness worsens.
+chem101-lab,class,CHEM 101 Lab,Tuesday Thursday,11:00-13:50,Kepler Chemistry Lab B14,TA Ren Ortiz,Lab runs through lunch; repeated skipped meals are linked to headache and late-day crash.
+bio111-lab,class,BIO 111 Lab,Monday,13:10-15:00,Darwin Hall Lab 3,TA Jules Hamidi,Week 8 Monday practical requires sleep-protected study blocks.
+calc-review,academic support,Quantitative Biology Problem Session,Wednesday,16:00-17:00,STEM Commons 2C,Peer Leader Imani Brooks,Optional but useful if chemistry midterm anxiety rises.
+work-study,work,Library circulation desk shift,Thursday,18:00-21:00,Carver Library Desk,Supervisor Theo Grant,May need coverage if fever continues or urgent care visit runs late.
+club-soccer-practice,activity,Club soccer practice,Tuesday Thursday,19:30-21:00,Mason Rec Field,Coach Paige Lin,Ankle soreness plus low sleep changes recovery plan; coach note may be needed.
+club-soccer-captain-check,activity,Club soccer captain check-in,Friday,17:00-17:20,Mason Rec Field,Team Captain Riley Park,Useful low-stakes slot for saying whether Alex is practicing or resting.
+office-hours-bio,office hours,BIO 111 office hours,Wednesday,14:00-15:00,Darwin Hall 312,Prof. Elena Cho,Good slot to ask what to prioritize before practical if sick.
+office-hours-chem,office hours,CHEM 101 TA office hours,Tuesday,15:00-16:00,Kepler Chemistry 030,TA Ren Ortiz,Best place to ask about lab make-up or safety if symptoms interfere.
+student-health-clinic,care access,East Campus Clinic walk-in window,Weekdays,08:00-17:00,East Campus Clinic,Northview Student Health,Alex prefers urgent care after 18:00; clinic still best for daytime non-urgent care.
+campus-pharmacy,care access,Campus Corner Pharmacy,Monday-Friday,09:00-18:30,Campus Corner Shops,Pharmacy desk,Refill window matters before Friday; confirm prescriber approval and insurance.
