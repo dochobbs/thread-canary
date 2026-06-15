@@ -1,0 +1,14 @@
+{
+  "name": "thread-agent",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@inkbox/sdk": "latest",
+    "dotenv": "^17.4.2",
+    "express": "latest",
+    "openai": "latest"
+  }
+}

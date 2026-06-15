@@ -1,0 +1,6 @@
+node_modules/
+.env
+.venv/
+_send.mjs
+test-spotify.mjs
+send-demo-email.mjs
