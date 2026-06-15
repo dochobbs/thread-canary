@@ -10,6 +10,41 @@ THREAD earns trust on the questions you can't Google: "I drank at the tailgate a
 
 The growth model is whisper-loop: Alex tells Jordan, Jordan texts the triage number, and THREAD has two users instead of one. CAC drops toward zero because the product spreads through the moments it handles well.
 
+## Platform Dependencies
+
+### Inkbox (inkbox.ai)
+
+Inkbox is the communication and identity layer. It gives the agent:
+
+- **An iMessage identity** — the agent sends and receives real iMessages through an Inkbox-managed Apple relay. Users text a triage number, say "connect @thread", and get routed to the agent's identity.
+- **Email** — the agent has its own email address (thread@inkboxmail.com) for sending visit prep notes, demo prompts, etc.
+- **Phone number** — for SMS/voice (not used in this demo, but available).
+- **Tunnel** — Inkbox provides a persistent HTTPS tunnel (thread.inkboxwire.com) that forwards webhook events to the local server. No ngrok or cloudflare needed.
+- **Webhook subscriptions** — Inkbox fires `imessage.received` events to the tunnel URL when a message arrives.
+
+The Inkbox SDK (`@inkbox/sdk`) and CLI (`@inkbox/cli`) handle all of this. Docs: https://inkbox.ai/api/openapi.json. SDK repo: https://github.com/inkbox-ai/inkbox.
+
+### Sprite (sprites.dev)
+
+Sprite is the cloud compute environment where the agent runs. Think of it as a persistent Linux VM with:
+
+- **Always-on services** — `sprite-env services create` registers a process that auto-restarts on crash. The agent runs as a Sprite service called `thread-agent`.
+- **Persistent filesystem** — code, node_modules, .env all survive reboots.
+- **Network access** — can reach Inkbox, OpenRouter, Spotify, Open-Meteo, etc.
+- **No public URL for webhooks** — Sprite URLs are auth-protected, which is why we use the Inkbox tunnel instead.
+
+You don't need Sprite to run this. Any server, VPS, or even a laptop with Node.js can run the agent — you just need the Inkbox tunnel for webhook delivery.
+
+### OpenRouter (openrouter.ai)
+
+LLM proxy that gives access to Claude Sonnet 4 (and other models) through a single API key and OpenAI-compatible endpoint. The agent talks to `https://openrouter.ai/api/v1` using the standard OpenAI SDK. You could swap this for direct Anthropic API access by changing `OPENAI_BASE_URL` and `OPENAI_API_KEY` in `.env`.
+
+### Hermes Agent (hermes-agent.nousresearch.com)
+
+This agent was built interactively using Hermes Agent — an open-source AI agent framework by Nous Research that runs in your terminal. Hermes provided the development environment: file editing, terminal access, web search, persistent memory across sessions, and skill management. The Hermes skills installed during development (inkbox-cli, inkbox-python, inkbox-ts) provided SDK documentation and CLI reference.
+
+You don't need Hermes to run the THREAD agent — it's a standalone Node.js server. But if you want to iterate on the prompt, add features, or debug issues conversationally, Hermes is how this was built.
+
 ## Architecture
 
 ```
@@ -33,6 +68,8 @@ Inkbox SDK → iMessage reply
 **Why Node.js, not Python:** Python venv creation kept failing/timing out on the Sprite environment. Node.js had working npm + the Inkbox SDK already published. The server is ~300 lines — framework choice doesn't matter much.
 
 **Why Inkbox tunnel, not Sprite URL:** The Sprite URL is auth-protected and couldn't be made public for webhook delivery. The Inkbox tunnel provides a dedicated, unauthenticated webhook endpoint.
+
+**Running without Sprite:** Any machine with Node.js 18+ and internet access works. The Inkbox tunnel handles webhook delivery regardless of where the server runs — no public IP or domain needed.
 
 ## Integrations
 
